@@ -101,32 +101,17 @@ const Matrix& Matrix::operator -=(const Matrix& m ) {
    return *this;
 };
 
+const Matrix& Matrix::operator !() {
+   std::fill(this -> data.begin(), this -> data.end(), 0.f);
+   return *this;
+};
+
 const Matrix& Matrix::operator *= (float k ) {
   for (size_t i = 0; i < this -> data.size(); i++) {
          this -> data[i] = k * this -> data[i];
    } 
    return *this;
 };
-
-void Matrix::mult(const Matrix& m, Matrix& target ) {
-   if ( this->cols != m.rows       || 
-       target.rows != this -> rows || 
-       target.cols != m.cols ) {
-         throw std::runtime_error("Dimension mismatch!");
-      }
-
-   for(size_t i = 0; i < this -> rows; i++ ) {
-      for(size_t k = 0; k < m.cols; k++ ) {
-         float val_c = 0;
-         for(size_t j = 0; j < this -> cols; j++ ) {
-            float val_a = (*this)( i , j );
-            float val_b = m(j , k );
-            val_c += val_a * val_b;
-         }
-         target(i, k) = val_c;
-      }
-   }
-}
 
  const Matrix& Matrix::transpose() {
     this -> transposed = !this -> transposed;

@@ -19,7 +19,7 @@ int main() {
     }
     mat_a.print();
     Matrix mat_b(3, 4, false);
-    std::cout << "Mat B(A Transposed) \n\n";
+    std::cout << "\nMat B(A Transposed) \n\n";
 
     for(size_t i = 0; i < 3; i++ ) {
         for(size_t j=0; j < 4; j++) {
@@ -30,21 +30,21 @@ int main() {
     mat_b.print();
     Matrix mat_c = mat_a * mat_b;
 
-    std::cout << "Mat A * Mat B \n\n";
+    std::cout << "\nMat A * Mat B \n\n";
 
     mat_c.print();
 
-    std::cout << "Mat C + Mat C \n\n";
+    std::cout << "\nMat C + Mat C \n\n";
     mat_c += mat_c;
     mat_c.print();
 
     float half = 0.5;
 
-    std::cout << "0.5*Mat B \n\n";
+    std::cout << "\n0.5*Mat B \n\n";
     mat_b *= half;
     mat_b.print();
 
-    std::cout << "Mat C - 0.5*Mat C \n\n";
+    std::cout << "\nMat C - 0.5*Mat C \n\n";
     Matrix mat_d = mat_c * half;
     mat_c -= mat_d;
 
@@ -54,5 +54,16 @@ int main() {
 
     std::cout << "Mat C + Mat A * Mat B \n\n";
     mat_c.print();
+
+
+    std::cout << "\nStatic Mat A * Mat B \n\n";
+    Matrix mat_e(3,3, false);
+    Matrix::gemm(mat_a,mat_b, mat_e);
+    mat_e.print();
+
+    !mat_e;
+
+    std::cout << "\nEmpty MatE\n";
+    mat_e.print();
     return 0;
 }
