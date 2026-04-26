@@ -1,0 +1,17 @@
+cmake_minimum_required(VERSION 3.10)
+project(GoetheTransformer)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/build)
+
+# C++ 17 oder 20 für moderne Features (wie std::vector Optimierungen)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Suche nach OpenMP für spätere Parallelisierung
+find_package(OpenMP)
+
+add_executable(transformer src/main.cpp)
+
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(transformer PUBLIC OpenMP::OpenMP_CXX)
+endif()
