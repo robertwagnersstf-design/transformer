@@ -65,5 +65,24 @@ int main() {
 
     std::cout << "\nEmpty MatE\n";
     mat_e.print();
+
+    Matrix mat_slice(8, 9, false);
+    std::cout << "\nMat Slice \n\n";
+
+    for(size_t i = 0; i < 8; i++ ) {
+        for(size_t j=0; j < 9; j++) {
+            mat_slice(i,j) = i*j+j;
+        }
+    }
+    mat_slice.print();
+
+    Matrix slice = mat_slice.slice(2,3,3,3);
+
+    std::cout << "\nSlice \n\n";
+    slice.print();
+    
+    std::cout << "\nSlice Softmax\n\n";
+    slice.layer_norm();
+    slice.print();
     return 0;
 }

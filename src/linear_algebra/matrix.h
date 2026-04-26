@@ -1,11 +1,13 @@
 #include <vector>
 #include <iostream>
 #include <random>
+#include <memory>
+#include "../consts.h"
 
 class Matrix {
 public:
-    size_t rows, cols, stride;
-    std::vector<float> data;
+    size_t rows, cols, stride, offset;
+    std::shared_ptr<std::vector<float>> data;
     bool transposed;
 
     Matrix(size_t r, size_t c, bool initialize = false);
@@ -22,6 +24,12 @@ public:
     const Matrix& operator -=(const Matrix& m  );
     const Matrix& operator ! ();
     const Matrix& transpose();
+
+    const Matrix slice(const size_t row_start, const size_t col_start, const size_t rows, const size_t cols );
+
+    void activate_relu();
+    void layer_norm();
+    void ms_softmax();
 
     void print();   
     void xavier_init();

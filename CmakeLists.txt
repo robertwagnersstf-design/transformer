@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Suche nach OpenMP für spätere Parallelisierung
 find_package(OpenMP)
 
-add_executable(transformer src/main.cpp src/linear_algebra/matrix.cpp)
+add_executable(transformer src/main.cpp src/linear_algebra/matrix.cpp src/consts.h)
 
 target_include_directories(transformer PUBLIC linear_algebra)
 
