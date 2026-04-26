@@ -15,12 +15,15 @@ public:
 
     const float& operator()(size_t r, size_t c) const;
 
-    const Matrix operator   *(Matrix& m );
-    const Matrix& operator +=(Matrix& m );
-    const Matrix& operator -=(Matrix& m );
+    const Matrix  operator   *(const Matrix& m );
+    const Matrix  operator   *(float k   );
+    const Matrix& operator  *=(float k   );
+    const Matrix& operator +=(const Matrix& m  );
+    const Matrix& operator -=(const Matrix& m  );
     const Matrix& operator ! ();
     const Matrix& transpose();
     
-    void print();
+    void mult(const Matrix& m, Matrix& target );
+    void print();   
     void xavier_init();
 };
