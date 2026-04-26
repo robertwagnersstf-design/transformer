@@ -20,7 +20,6 @@ public:
     const Matrix& operator -=(Matrix& m );
     const Matrix& operator ! ();
     const Matrix& transpose();
-    const Matrix& set(size_t r, size_t c, float val);
     
     void print();
     void xavier_init();

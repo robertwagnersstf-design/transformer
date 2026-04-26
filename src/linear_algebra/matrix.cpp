@@ -33,16 +33,6 @@
     return this -> data[this -> stride * r + c ];
  };
  
- 
- const Matrix& Matrix::set(size_t r, size_t c, float val) {
-   if( this -> transposed ) {
-        this -> data[this -> stride * c + r ] = val;
-    } else {
-      this -> data[this -> stride * r + c ] = val;
-    }
-    return *this;
- }
-
 const Matrix Matrix::operator *(Matrix& m ) {
       if (this->cols != m.rows) {
          throw std::runtime_error("Dimension mismatch!");
