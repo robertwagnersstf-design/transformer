@@ -129,12 +129,28 @@ const Matrix& Matrix::operator *= (float k ) {
  }
 
  void Matrix::xavier_init() {
-    float limit = sqrt(6.0f / (rows + cols));
+    float limit = sqrt(6.0f / (this -> rows + this -> cols));
     std::default_random_engine gen;
     std::uniform_real_distribution<float> dist(-limit, limit);
-    for (auto& val : (*this -> data)) val = dist(gen);
+    for (size_t i = 0; i < this -> rows; i++) {
+        for (size_t j = 0; j < this -> cols; j++) {
+            (*this)(i, j) = dist(gen);
+        }
+    }
  };
 
+ void Matrix::he_init() {
+    // Bei He-Init ist oft nur die Anzahl der Eingänge (rows bei Gewichtsmatrix) entscheidend
+    float limit = std::sqrt(6.0f / this -> rows); 
+    std::default_random_engine gen;
+    std::uniform_real_distribution<float> dist(-limit, limit);
+    
+    for (size_t i = 0; i < this -> rows; i++) {
+        for (size_t j = 0; j < this -> cols; j++) {
+            (*this)(i, j) = dist(gen);
+        }
+    }
+}
 
  void Matrix::activate_relu() {
    for(size_t i = 0; i < this -> rows; i++ ) {

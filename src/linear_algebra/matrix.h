@@ -33,6 +33,7 @@ public:
 
     void print();   
     void xavier_init();
+    void he_init();
 
     // static stuff
     static void gemm(const Matrix& a, const Matrix& b, Matrix& target ) {
