@@ -1,3 +1,0 @@
-/workspaces/DevC/build/CMakeFiles/transformer.dir
-/workspaces/DevC/build/CMakeFiles/edit_cache.dir
-/workspaces/DevC/build/CMakeFiles/rebuild_cache.dir
