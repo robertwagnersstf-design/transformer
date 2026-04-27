@@ -1,8 +1,15 @@
+#ifndef MATRIX_H
+#define MATRIX_H
+
 #include <vector>
 #include <iostream>
 #include <random>
 #include <memory>
 #include "../consts.h"
+#include <array>
+#include <cmath>
+
+#define statistics_block std::vector<std::array<float,2 >> 
 
 class Matrix {
 public:
@@ -27,14 +34,23 @@ public:
 
     const Matrix slice(const size_t row_start, const size_t col_start, const size_t rows, const size_t cols );
 
-    void activate_relu();
-    void layer_norm();
-    void ms_softmax();
+    void activate_relu( Matrix& m);
+    void leaky_relu_backward(Matrix& dX);
+
+    statistics_block layer_norm( Matrix& m);
+
+    void ms_softmax( Matrix& m);
+    void ms_softmax_backward(const Matrix& dX, Matrix& dY);
 
     void print();   
+
     void xavier_init();
     void he_init();
+    void embedding_init(float sigma = 0.02f);
+    void positional_encoding_init( );
 
+    Matrix copy();
+    
     // static stuff
     static void gemm(const Matrix& a, const Matrix& b, Matrix& target ) {
         if ( a.cols != b.rows       || 
@@ -55,4 +71,27 @@ public:
             }
         }
     }
+    static void gema(const Matrix& a, const Matrix& b, Matrix& target ) {
+        if (a.cols != b.cols ) {
+            throw std::runtime_error("Dimension mismatch!");
+        }
+        // schnelle variante für den standardfall
+        if (b.rows == 1 ) {
+            for(size_t i = 0; i < a.rows; i++ ) {
+                for(size_t j = 0; j < b.cols; j++ ) {
+                    target(i,j ) = a(i,j) + b(0,j);
+                }
+            }
+        } else if(a.rows == b.rows ){
+            for(size_t i = 0; i < a.rows; i++ ) {
+                for(size_t j = 0; j < b.cols; j++ ) {
+                    target(i,j ) = a(i,j) + b(i,j);
+                }
+            }
+        } else {
+            throw std::runtime_error("Dimension mismatch!");
+        }
+    };
 };
+
+#endif

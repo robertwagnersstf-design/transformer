@@ -1,5 +1,8 @@
 #include "matrix.h"
 
+#ifndef MATRIX_CPP
+#define MATRIX_CPP
+
  Matrix::Matrix(size_t r, size_t c, bool initialize) {
     this -> rows   = r;
     this -> cols   = c;
@@ -152,16 +155,50 @@ const Matrix& Matrix::operator *= (float k ) {
     }
 }
 
- void Matrix::activate_relu() {
-   for(size_t i = 0; i < this -> rows; i++ ) {
+ void Matrix::embedding_init(float sigma) {
+    std::default_random_engine generator;
+    std::normal_distribution<float> distribution(0.0, sigma);
+
+    for (size_t i = 0; i < rows * cols; ++i) {
+        (*this -> data)[i] = distribution(generator);
+    }
+}
+
+ void Matrix::positional_encoding_init( ) {
+    for(size_t i = 0; i < this -> rows; i++ ) {
       for(size_t j = 0; j < this -> cols; j++ ) { 
-         float x = (*this)(i,j);
-         (*this)(i,j) = x >= 0 ? x : RELU_LEAKAGE * x;
+         float x = 0.;
+         float dimension_index = float(j / 2);
+         float div_term = pow(10000.f, (2.*dimension_index/float(this -> cols) ) );
+
+         if(j%2 == 0 ) x = std::sin(float(i)/ div_term );
+         else          x = std::cos(float(i)/ div_term );
+         (*this)(i,j) = x;
       }   
    } 
  }
 
- void Matrix::layer_norm() {
+void Matrix::activate_relu(Matrix& m) {
+   for(size_t i = 0; i < this -> rows; i++ ) {
+      for(size_t j = 0; j < this -> cols; j++ ) { 
+         float x = (*this)(i,j);
+         m(i,j) = x >= 0 ? x : RELU_LEAKAGE * x;
+      }   
+   } 
+ }
+
+void Matrix::leaky_relu_backward(Matrix& dX) {
+    for (size_t i = 0; i < this -> rows; ++i) {
+        for (size_t j = 0; j < this -> cols; ++j) {
+            float val = (*this)(i, j);
+            dX(i, j) *= (val > 0) ? 1.0f : RELU_LEAKAGE;
+        }
+    }
+}
+
+statistics_block Matrix::layer_norm(Matrix& m) {
+    statistics_block memory = std::vector<std::array<float, 2>>();
+
     for (size_t i = 0; i < this -> rows; ++i) {
         // 1. Mittelwert (Mean) berechnen
         float mean = 0.0f;
@@ -181,12 +218,14 @@ const Matrix& Matrix::operator *= (float k ) {
         // 3. Normalisieren
         float inv_std = 1.0f / std::sqrt(variance + 1e-5f);
         for (size_t j = 0; j < this -> cols; ++j) {
-            (*this)(i, j) = ((*this)(i, j) - mean) * inv_std;
+            m(i, j) = ((*this)(i, j) - mean) * inv_std;
          }
+         memory.push_back({mean, variance/inv_std});
       }
+      return memory;
   };
 
-  void Matrix::ms_softmax() {
+void Matrix::ms_softmax(Matrix& m) {
     for (size_t i = 0; i < this -> rows; ++i) {
         // 1. Mittelwert (Mean) berechnen
         float max = 0.0f;
@@ -197,16 +236,42 @@ const Matrix& Matrix::operator *= (float k ) {
         float sum_exp = 0.0f;
         for (size_t j = 0; j < this -> cols; ++j) {
             float x = std::exp((*this)(i, j) - max);
-            (*this)(i, j) = x;
+            m(i, j) = x;
             sum_exp += x;
         }
         
         for (size_t j = 0; j < this -> cols; ++j) {
-            (*this)(i, j) /= sum_exp;
+            m(i, j) /= sum_exp;
          }
       }
   };
 
+  void Matrix::ms_softmax_backward(const Matrix& dX, Matrix& dY) {
+      for (size_t i = 0; i < this -> rows; i++) {
+         for (size_t j = 0; j < this -> cols; j++) {
+            float si = (*this)(i,j);
+            float res = 0.f;
+            // building relevant column of jakobi matrix on the fly and immediately calc dotproduct and resulting gradient
+            for(size_t k = 0; k < this -> cols; k++ ) {
+               float t = k == j ? 1. : 0.;
+               float sk = (*this)(i,k);
+               res += si*(t - sk) * dX(i, k); 
+            }
+            dY(i,j) = res;
+         }
+      }
+  };
+
+ Matrix Matrix::copy() {
+   Matrix m( this -> rows, this -> cols );
+   m.transposed = this -> transposed;
+   m.offset     = this -> offset;
+   m.stride     = this -> stride;
+   m.data       = std::make_shared<std::vector<float>>(*this->data);
+
+   return m;
+ }
+ 
  void Matrix::print() {
     for(size_t i = 0; i < this -> rows; i++ ) {
         for(size_t j = 0; j < this -> cols; j++ ) {
@@ -215,3 +280,5 @@ const Matrix& Matrix::operator *= (float k ) {
         std::cout << "\n";
     }
  }
+
+ #endif

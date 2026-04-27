@@ -2,6 +2,7 @@
 #include <vector>
 #include <numeric>
 #include "linear_algebra/matrix.h"
+#include "token/tokenizer.h"
 
 #ifdef _OPENMP
     #include <omp.h>
@@ -26,6 +27,7 @@ int main() {
             mat_b(i,j) = i*j+j;
         }
     }
+
     mat_b.transpose();
     mat_b.print();
     Matrix mat_c = mat_a * mat_b;
@@ -61,6 +63,11 @@ int main() {
     Matrix::gemm(mat_a,mat_b, mat_e);
     mat_e.print();
 
+    Matrix mat_target(3, 4, false);
+    std::cout << "\nStatic MatA + MatA\n\n";
+    Matrix::gema(mat_a,mat_a, mat_target);
+    mat_target.print();
+
     !mat_e;
 
     std::cout << "\nEmpty MatE\n";
@@ -81,8 +88,84 @@ int main() {
     std::cout << "\nSlice \n\n";
     slice.print();
     
-    std::cout << "\nSlice Softmax\n\n";
-    slice.layer_norm();
-    slice.print();
+    Matrix mat_softmax_ex(8, 9, false);
+    std::vector<std::array<float,2 >> k = mat_slice.layer_norm(mat_softmax_ex);
+
+    std::cout << "\nSlice Layernorm not inline\n\n";
+    mat_softmax_ex.print();
+
+    for( auto v: k ) 
+        std::cout << "\nMean: " << v[0] << ", Variance: " << v[1] <<"\n";
+
+    Matrix mat_softmax(4, 4, false);
+    Matrix dx(4, 4, false);
+    Matrix dy(4, 4, false);
+
+    for(size_t i = 0; i < 4; i++ ) {
+        for(size_t j=0; j < 4; j++) {
+            mat_softmax(i,j) = float(i+j)/8.;
+        }
+    }
+
+    std::cout << "\n\nMatrix to do Softmax\n\n";
+
+    mat_softmax.print();
+    Matrix mat_forward(4, 4, false);
+    mat_softmax.ms_softmax(mat_forward);
+
+    std::cout << "\n\nSoftmax Result\n\n";
+
+    mat_forward.print();
+
+    for(size_t i = 0; i < 4; i++ ) {
+        for(size_t j=0; j < 4; j++) {
+            dx(i,j) = i==j ? .5 : 1.;
+        }
+    }
+    
+    std::cout << "\n\nGradient dX\n\n";
+
+    dx.print();
+
+    mat_forward.ms_softmax_backward(dx, dy);
+
+    std::cout << "\n\nResult dY\n\n";
+    dy.print();
+
+    Matrix mat_embedd(6, 10, false);
+    mat_embedd.embedding_init();
+    Matrix mat_pe(6, 10, false);
+    mat_pe.positional_encoding_init();
+
+    std::cout << "\n\nEmbedding init\n\n";
+    mat_embedd.print();
+
+    std::cout << "\n\nPE init\n\n";
+    mat_pe.print();
+
+    std::cout << "\n\nJust for fun embedd + PE \n\n";
+    Matrix mat_add(6, 10, false);
+
+    Matrix::gema(mat_embedd, mat_pe, mat_add);
+    mat_add.print();
+    
+    std::cout <<"\n\n Token tests\n\n";
+
+    std::vector<std::string> tokenres = std::vector<std::string>();
+
+    std::cout <<"\n\n Split by word\n\n";
+
+    Tokenizer tokenizer({"klaus", "kann", "lullen", "ohne", "dass", "es", "brennt", "mag", "darf", "will", "bis"}, 6, 8);
+    tokenizer.split_to_tokens("klaus will lullen, bis es brennt", tokenres, " ");
+    
+    for(auto token: tokenres) {
+        std::cout << token <<"    ";
+    }
+
+    tokenres.clear();
+    
+    tokenizer.text_to_input("klaus will lullen bis  es brennt");
+    std::cout <<"\nInputmebdding\n";
+    tokenizer.input_token.print();
     return 0;
 }
