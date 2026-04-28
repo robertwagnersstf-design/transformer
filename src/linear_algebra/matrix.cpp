@@ -131,10 +131,23 @@ const Matrix& Matrix::operator *= (float k ) {
    return slice;
  }
 
+ void Matrix::deslice(const size_t row_start, const size_t col_start, Matrix& slice ) {
+   for(size_t i = row_start; i < row_start + slice.rows; i++ ) {
+      for(size_t j = col_start; j < col_start + slice.cols; j++ ) {
+         (*this)(i,j) = slice(i-row_start, j-col_start);
+      }
+   }
+ };
+
  void Matrix::xavier_init() {
-    float limit = sqrt(6.0f / (this -> rows + this -> cols));
-    std::default_random_engine gen;
+    static std::mt19937 gen(std::random_device{}()); 
+    
+    float n_in = static_cast<float>(this->rows);
+    float n_out = static_cast<float>(this->cols);
+    float limit = std::sqrt(6.0f / (n_in + n_out));
+    
     std::uniform_real_distribution<float> dist(-limit, limit);
+
     for (size_t i = 0; i < this -> rows; i++) {
         for (size_t j = 0; j < this -> cols; j++) {
             (*this)(i, j) = dist(gen);
@@ -145,7 +158,7 @@ const Matrix& Matrix::operator *= (float k ) {
  void Matrix::he_init() {
     // Bei He-Init ist oft nur die Anzahl der Eingänge (rows bei Gewichtsmatrix) entscheidend
     float limit = std::sqrt(6.0f / this -> rows); 
-    std::default_random_engine gen;
+    static std::mt19937 gen(std::random_device{}()); 
     std::uniform_real_distribution<float> dist(-limit, limit);
     
     for (size_t i = 0; i < this -> rows; i++) {
@@ -156,11 +169,11 @@ const Matrix& Matrix::operator *= (float k ) {
 }
 
  void Matrix::embedding_init(float sigma) {
-    std::default_random_engine generator;
+    static std::mt19937 gen(std::random_device{}()); 
     std::normal_distribution<float> distribution(0.0, sigma);
 
     for (size_t i = 0; i < rows * cols; ++i) {
-        (*this -> data)[i] = distribution(generator);
+        (*this -> data)[i] = distribution(gen);
     }
 }
 
@@ -225,6 +238,34 @@ statistics_block Matrix::layer_norm(Matrix& m) {
       return memory;
   };
 
+statistics_block Matrix::layer_norm( Matrix& m, Matrix & beta, Matrix & gamma) {
+   statistics_block memory = std::vector<std::array<float, 2>>();
+
+    for (size_t i = 0; i < this -> rows; ++i) {
+        // 1. Mittelwert (Mean) berechnen
+        float mean = 0.0f;
+        for (size_t j = 0; j < this -> cols; ++j) {
+            mean += (*this)(i, j);
+        }
+        mean /= this -> cols;
+
+        // 2. Varianz berechnen
+        float variance = 0.0f;
+        for (size_t j = 0; j < this -> cols; ++j) {
+            float diff = (*this)(i, j) - mean;
+            variance += diff * diff;
+        }
+        variance /= this -> cols;
+
+        // 3. Normalisieren
+        float inv_std = 1.0f / std::sqrt(variance + 1e-5f);
+        for (size_t j = 0; j < this -> cols; ++j) {
+            m(i, j) = ( ((*this)(i, j) - mean) * inv_std ) * gamma(0,j) + beta(0,j);
+         }
+         memory.push_back({mean, variance/inv_std});
+      }
+      return memory;
+}
 void Matrix::ms_softmax(Matrix& m) {
     for (size_t i = 0; i < this -> rows; ++i) {
         // 1. Mittelwert (Mean) berechnen
@@ -242,6 +283,27 @@ void Matrix::ms_softmax(Matrix& m) {
         
         for (size_t j = 0; j < this -> cols; ++j) {
             m(i, j) /= sum_exp;
+         }
+      }
+  };
+
+  void Matrix::ms_softmax() {
+    for (size_t i = 0; i < this -> rows; ++i) {
+        // 1. Mittelwert (Mean) berechnen
+        float max = 0.0f;
+        for (size_t j = 0; j < this -> cols; ++j) {
+            max = (*this)(i, j) > max ? (*this)(i, j) : max;
+        }
+        
+        float sum_exp = 0.0f;
+        for (size_t j = 0; j < this -> cols; ++j) {
+            float x = std::exp((*this)(i, j) - max);
+            (*this)(i, j) = x;
+            sum_exp += x;
+        }
+        
+        for (size_t j = 0; j < this -> cols; ++j) {
+            (*this)(i, j) /= sum_exp;
          }
       }
   };
@@ -268,6 +330,24 @@ void Matrix::ms_softmax(Matrix& m) {
    m.offset     = this -> offset;
    m.stride     = this -> stride;
    m.data       = std::make_shared<std::vector<float>>(*this->data);
+
+   return m;
+ }
+
+ //copy in already existing matrix of equal dimensions, to aovid unnesecary initialization
+ Matrix Matrix::copy(Matrix& m) {
+   if (this->cols != m.cols  || this -> rows != m.rows ) {
+      throw std::runtime_error("Dimension mismatch!");
+   }
+
+   m.transposed = this -> transposed;
+   m.offset     = this -> offset;
+   m.stride     = this -> stride;
+   for(size_t i = 0; i < this -> rows; i++ ) {
+      for(size_t j = 0; j < this -> cols; j++) {
+         m(i,j) = (*this)(i,j);
+      }
+   }
 
    return m;
  }

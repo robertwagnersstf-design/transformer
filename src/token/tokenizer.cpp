@@ -4,14 +4,16 @@
 #define TOKENIZER_CPP
 
 
-Tokenizer::Tokenizer(std::vector<std::string> dictionary_list, size_t embedd_dims, size_t d_model, EmbeddingType type ) : 
-                embeddings   (dictionary_list.size() + 3 , embedd_dims, false),
-                embedd_dims  (embedd_dims                                    ),
-                dict_size    (dictionary_list.size()                         ),
-                dictionary   (                                               ),
-                d_model      (d_model                                        ),
-                input_token  (d_model, embedd_dims                           ),
-                embeddingtype(type                                           ) {
+Tokenizer::Tokenizer(std::vector<std::string> dictionary_list, size_t d_model, size_t d_seq, EmbeddingType type ) : 
+                embeddings        (dictionary_list.size() + 3 , d_model, false),
+                d_model           (d_model                                    ),
+                dict_size         (dictionary_list.size()                     ),
+                dictionary        (                                           ),
+                d_seq             (d_seq                                      ),
+                input_token_pe    (                                           ),
+                input_token       (                                           ),
+                postional_encoding(d_seq, d_model                             ),
+                embeddingtype     (type                                       ) {
     size_t curr_idx = 3;
     this -> dictionary.insert(std::pair<std::string,size_t>("UNK", 0));
     this -> dictionary.insert(std::pair<std::string,size_t>("PAD", 1));
@@ -23,6 +25,7 @@ Tokenizer::Tokenizer(std::vector<std::string> dictionary_list, size_t embedd_dim
         ++curr_idx;
     }
     this -> embeddings.embedding_init();
+    this -> postional_encoding.positional_encoding_init();
 };
 
 Matrix& Tokenizer::text_to_input(const std::string& text ) {
@@ -31,6 +34,9 @@ Matrix& Tokenizer::text_to_input(const std::string& text ) {
 
     split_to_tokens(to_split, tokens, this -> embeddingtype == EmbeddingType::ByCharacter ? "" : " ");
 
+    Matrix new_input(d_seq, d_model);
+    Matrix new_pe(d_seq, d_model);
+
     size_t current_row = 0;
     for(auto token: tokens ) {
         auto it = this -> dictionary.find(token);
@@ -38,19 +44,26 @@ Matrix& Tokenizer::text_to_input(const std::string& text ) {
         if (it != this -> dictionary.end() ) {
             token_index = it -> second;
         }
-        for(size_t j = 0; j < this -> embedd_dims; j++ ) {
-            this -> input_token(current_row, j ) = this -> embeddings(token_index, j);
+        for(size_t j = 0; j < this -> d_model; j++ ) {
+            new_input(current_row, j ) = this -> embeddings(token_index, j);
         } 
         ++current_row;
     }
-    if(current_row < this -> d_model ) {
-        for(size_t i = current_row; i < this -> d_model ; i++ ) {
-            for(size_t j = 0; j < this -> embedd_dims; j++ ) {
-                this -> input_token(i, j ) = this -> embeddings(1, j); //Padding
+    if(current_row < this -> d_seq ) {
+        for(size_t i = current_row; i < this -> d_seq ; i++ ) {
+            for(size_t j = 0; j < this -> d_model; j++ ) {
+                new_input(i, j ) = this -> embeddings(1, j); //Padding
             }
         }
     }
-    return this -> input_token;
+    this -> input_token.push_back(new_input);
+
+    Matrix::gema(new_input, this -> postional_encoding, new_pe);
+
+    new_pe *= sqrt(float(this -> d_seq) );
+    
+    this -> input_token_pe.push_back(new_pe);
+    return new_input;
 };
 
 void Tokenizer::split_to_tokens(const std::string& text, std::vector<std::string>& target, const std::string delimiter ) {

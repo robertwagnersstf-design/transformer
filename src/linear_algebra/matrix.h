@@ -16,7 +16,7 @@ public:
     size_t rows, cols, stride, offset;
     std::shared_ptr<std::vector<float>> data;
     bool transposed;
-
+    
     Matrix(size_t r, size_t c, bool initialize = false);
 
     // Zugriff via m(row, col)
@@ -32,14 +32,17 @@ public:
     const Matrix& operator ! ();
     const Matrix& transpose();
 
-    const Matrix slice(const size_t row_start, const size_t col_start, const size_t rows, const size_t cols );
+    const Matrix slice  (const size_t row_start, const size_t col_start, const size_t rows, const size_t cols );
+    void deslice(const size_t row_start, const size_t col_start, Matrix& slice );
 
     void activate_relu( Matrix& m);
     void leaky_relu_backward(Matrix& dX);
 
     statistics_block layer_norm( Matrix& m);
+    statistics_block layer_norm( Matrix& m, Matrix & beta, Matrix & gamma);
 
     void ms_softmax( Matrix& m);
+    void ms_softmax( );
     void ms_softmax_backward(const Matrix& dX, Matrix& dY);
 
     void print();   
@@ -50,6 +53,7 @@ public:
     void positional_encoding_init( );
 
     Matrix copy();
+    Matrix copy(Matrix& m);
     
     // static stuff
     static void gemm(const Matrix& a, const Matrix& b, Matrix& target ) {

@@ -3,6 +3,7 @@
 #include <numeric>
 #include "linear_algebra/matrix.h"
 #include "token/tokenizer.h"
+#include "transformer/multi_head_attention_layer.h"
 
 #ifdef _OPENMP
     #include <omp.h>
@@ -166,6 +167,83 @@ int main() {
     
     tokenizer.text_to_input("klaus will lullen bis  es brennt");
     std::cout <<"\nInputmebdding\n";
-    tokenizer.input_token.print();
+    tokenizer.input_token[0].print();
+
+    MultiHeadAttention m(8, 6, 3);
+    Matrix input(8,6, false);
+
+    for(size_t i = 0; i < 8; i++ ) {
+        for(size_t j=0; j < 6; j++) {
+            input(i,j) = i+j;
+        }
+    }
+
+    m.forward_mha(input);
+    std::cout <<"\n Input Matrix \n";
+    input.print();
+
+    std::cout <<"\n WQ Matrix \n";
+    m.w_q.print();
+    std::cout <<"\n WK Matrix \n";
+    m.w_k.print();
+    std::cout <<"\n WV Matrix \n";
+    m.w_v.print();
+    std::cout <<"\n W0 Matrix \n";
+    m.w0.print();
+    std::cout <<"\n Q Matrix \n";
+    m.cache.q.print();
+    std::cout <<"\n K Matrix \n";
+    m.cache.k.print();
+    std::cout <<"\n V Matrix \n";
+    m.cache.v.print();
+    m.cache.q.print();
+    std::cout <<"\n Score Matrix 1 \n";
+    m.cache.score_heads[0].print();
+    std::cout <<"\n Score Matrix 2 \n";
+    m.cache.score_heads[1].print();
+    std::cout <<"\n Score Matrix 3 \n";
+    m.cache.score_heads[2].print();
+    std::cout <<"\n output Matrix \n";
+    m.cache.output.print();
+    std::cout <<"\n output Matrix W0 \n";
+    m.cache.output_w0.print();
+   
+    MultiHeadAttention m2(8, 6, 3);
+    std::cout <<"\n All weigths to 1 \n";
+
+    std::fill(m2.w_q.data -> begin(), m2.w_q.data -> end(), 1.);
+    std::fill(m2.w_k.data -> begin(), m2.w_k.data -> end(), 1.);
+    std::fill(m2.w_v.data -> begin(), m2.w_v.data -> end(), 1.);
+    std::fill(m2.w0.data -> begin(),  m2.w0.data  -> end(), 1.);
+
+    m2.forward_mha(input);
+    std::cout <<"\n Input Matrix \n";
+    input.print();
+
+    std::cout <<"\n WQ Matrix \n";
+    m2.w_q.print();
+    std::cout <<"\n WK Matrix \n";
+    m2.w_k.print();
+    std::cout <<"\n WV Matrix \n";
+    m2.w_v.print();
+    std::cout <<"\n W0 Matrix \n";
+    m2.w0.print();
+    std::cout <<"\n Q Matrix \n";
+    m2.cache.q.print();
+    std::cout <<"\n K Matrix \n";
+    m2.cache.k.print();
+    std::cout <<"\n V Matrix \n";
+    m2.cache.v.print();
+
+    std::cout <<"\n Score Matrix 1 \n";
+    m2.cache.score_heads[0].print();
+    std::cout <<"\n Score Matrix 2 \n";
+    m2.cache.score_heads[1].print();
+    std::cout <<"\n Score Matrix 3 \n";
+    m2.cache.score_heads[2].print();
+    std::cout <<"\n output Matrix \n";
+    m2.cache.output.print();
+    std::cout <<"\n output Matrix W0 \n";
+    m2.cache.output_w0.print();
     return 0;
 }
