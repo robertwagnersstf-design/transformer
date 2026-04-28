@@ -23,7 +23,6 @@ public:
     };
 
     Matrix w_q,w_k,w_v, w0,q, k, v;
-    Matrix gamma,beta;
     size_t d_seq, d_model, heads;
     AttentionCache cache;
 

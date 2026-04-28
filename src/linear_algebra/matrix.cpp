@@ -168,6 +168,10 @@ const Matrix& Matrix::operator *= (float k ) {
     }
 }
 
+void Matrix::zero_init() {
+   std::fill(this -> data ->begin(), this -> data -> end(), 0.);
+}
+
  void Matrix::embedding_init(float sigma) {
     static std::mt19937 gen(std::random_device{}()); 
     std::normal_distribution<float> distribution(0.0, sigma);
@@ -238,9 +242,8 @@ statistics_block Matrix::layer_norm(Matrix& m) {
       return memory;
   };
 
-statistics_block Matrix::layer_norm( Matrix& m, Matrix & beta, Matrix & gamma) {
-   statistics_block memory = std::vector<std::array<float, 2>>();
-
+void Matrix::layer_norm( Matrix& m, Matrix & beta, Matrix & gamma, std::vector<float>& means, std::vector<float>& inv_devs) {
+   
     for (size_t i = 0; i < this -> rows; ++i) {
         // 1. Mittelwert (Mean) berechnen
         float mean = 0.0f;
@@ -262,9 +265,9 @@ statistics_block Matrix::layer_norm( Matrix& m, Matrix & beta, Matrix & gamma) {
         for (size_t j = 0; j < this -> cols; ++j) {
             m(i, j) = ( ((*this)(i, j) - mean) * inv_std ) * gamma(0,j) + beta(0,j);
          }
-         memory.push_back({mean, variance/inv_std});
+         means[i]    = mean, 
+         inv_devs[i] = inv_std;
       }
-      return memory;
 }
 void Matrix::ms_softmax(Matrix& m) {
     for (size_t i = 0; i < this -> rows; ++i) {
@@ -352,13 +355,19 @@ void Matrix::ms_softmax(Matrix& m) {
    return m;
  }
  
- void Matrix::print() {
-    for(size_t i = 0; i < this -> rows; i++ ) {
-        for(size_t j = 0; j < this -> cols; j++ ) {
-            std::cout << (*this)(i, j) <<"\t";
+ void Matrix::print(std::string label) {
+    std::cout << "--- " << label << " ---" << std::endl;
+    // Festlegen: 2 Nachkommastellen, feste Breite von 10 Zeichen
+    std::cout << std::fixed << std::setprecision(4); 
+    
+    for (size_t i = 0; i < rows; ++i) {
+        for (size_t j = 0; j < cols; ++j) {
+            // std::setw(10) sorgt dafür, dass jede Zahl exakt 10 Zeichen Platz braucht
+            std::cout << std::setw(10) << (*this)(i, j) << " ";
         }
-        std::cout << "\n";
+        std::cout << std::endl;
     }
+    std::cout << std::endl;
  }
 
  #endif

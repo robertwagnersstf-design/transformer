@@ -13,16 +13,12 @@ MultiHeadAttention::MultiHeadAttention(size_t d_seq, size_t d_model, size_t head
                     d_seq  (d_seq            ),
                     d_model(d_model          ),
                     cache  (d_seq, d_model   ),
-                    heads  (heads            ),
-                    gamma  (1, d_model       ),
-                    beta   (1, d_model       ) {
+                    heads  (heads            ) {
     this -> w_q.xavier_init();
     this -> w_k.xavier_init();
     this -> w_v.xavier_init();
     this ->  w0.xavier_init();
-    std::fill(this -> gamma.data -> begin(), this -> gamma.data -> end(), 1. );
-    std::fill(this -> beta.data  -> begin(), this -> beta.data  -> end(), 0. );
-    
+
     for(size_t i = 0; i < heads; i++ ) {
         this -> cache.score_heads.push_back(Matrix(d_seq, d_seq) );
     }

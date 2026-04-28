@@ -8,6 +8,7 @@
 #include "../consts.h"
 #include <array>
 #include <cmath>
+#include <iomanip>
 
 #define statistics_block std::vector<std::array<float,2 >> 
 
@@ -39,17 +40,18 @@ public:
     void leaky_relu_backward(Matrix& dX);
 
     statistics_block layer_norm( Matrix& m);
-    statistics_block layer_norm( Matrix& m, Matrix & beta, Matrix & gamma);
+    void layer_norm( Matrix& m, Matrix & beta, Matrix & gamma, std::vector<float>& means, std::vector<float>& inv_devs);
 
     void ms_softmax( Matrix& m);
     void ms_softmax( );
     void ms_softmax_backward(const Matrix& dX, Matrix& dY);
 
-    void print();   
+    void print(std::string label = "Matrix");   
 
     void xavier_init();
     void he_init();
     void embedding_init(float sigma = 0.02f);
+    void zero_init();
     void positional_encoding_init( );
 
     Matrix copy();

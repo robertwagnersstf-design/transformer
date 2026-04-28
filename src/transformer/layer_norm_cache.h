@@ -1,5 +1,5 @@
-#ifndef FEED_FORWARD_H
-#define FEED_FORWARD_H
+#ifndef LAYER_NORM_CACHE_H
+#define LAYER_NORM_CACHE_H
 
 #include <iostream>
 #include <vector>
@@ -9,16 +9,19 @@
 #include "../linear_algebra/matrix.h"
 #include "../consts.h"
 
-class FeedForward {
+class LayerNormCache {
 public:
-        Matrix w, d_w; 
-        Matrix net, act, err, bias;
-        bool activate;
+        Matrix normalized_input; 
+        Matrix gamma,beta;
 
-        FeedForward(size_t d_input, size_t d_output, size_t d_seq, bool activate = true);
+        std::vector<float> means;
+        std::vector<float> inv_stds; 
+
+        LayerNormCache(size_t d_seq, size_t d_model);
 
         Matrix& forward(Matrix& input);
         Matrix& backward(Matrix& gradient);
+
 };
 
 #endif
