@@ -13,9 +13,10 @@
 
 class Tokenizer {
 public:
-    Matrix embeddings;
+    Matrix embeddings, d_embeddings, m_embeddings, v_embeddings;
     Matrix postional_encoding;
     std::vector<Matrix> input_token, input_token_pe;
+    
     const size_t dict_size, d_model, d_seq;
     dict_type dictionary;
     EmbeddingType embeddingtype;

@@ -7,12 +7,12 @@ LayerNormCache::LayerNormCache(size_t d_seq, size_t d_model ):
         inv_stds(),
         normalized_input(d_seq, d_model),
         gamma  (1, d_model       ),
-        beta   (1, d_model       ) {
+        beta   (1, d_model       ),
+        adam   (1, d_model       )  {
     this -> means.resize   (d_seq, 0.);
     this -> inv_stds.resize(d_seq, 0.);
-    
-    std::fill(this -> gamma.data -> begin(), this -> gamma.data -> end(), 1. );
-    std::fill(this -> beta.data  -> begin(), this -> beta.data  -> end(), 0. );
+    this -> gamma  .value_init(1.0);
+    this -> beta   .zero_init();
 };
 
 Matrix&  LayerNormCache::forward(Matrix& input) {

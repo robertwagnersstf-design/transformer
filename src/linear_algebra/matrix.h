@@ -52,6 +52,7 @@ public:
     void he_init();
     void embedding_init(float sigma = 0.02f);
     void zero_init();
+    void value_init(float val);
     void positional_encoding_init( );
 
     Matrix copy();

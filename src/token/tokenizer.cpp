@@ -6,6 +6,9 @@
 
 Tokenizer::Tokenizer(std::vector<std::string> dictionary_list, size_t d_model, size_t d_seq, EmbeddingType type ) : 
                 embeddings        (dictionary_list.size() + 3 , d_model, false),
+                d_embeddings      (dictionary_list.size() + 3 , d_model, false),
+                m_embeddings      (dictionary_list.size() + 3 , d_model, false),
+                v_embeddings      (dictionary_list.size() + 3 , d_model, false),
                 d_model           (d_model                                    ),
                 dict_size         (dictionary_list.size()                     ),
                 dictionary        (                                           ),
@@ -26,6 +29,10 @@ Tokenizer::Tokenizer(std::vector<std::string> dictionary_list, size_t d_model, s
     }
     this -> embeddings.embedding_init();
     this -> postional_encoding.positional_encoding_init();
+    
+    this -> d_embeddings.zero_init();
+    this -> m_embeddings.zero_init();
+    this -> v_embeddings.zero_init();
 };
 
 Matrix& Tokenizer::text_to_input(const std::string& text ) {

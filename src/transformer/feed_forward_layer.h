@@ -11,8 +11,18 @@
 
 class FeedForward {
 public:
+        struct AdamParams {
+            Matrix m_w, v_w;
+            int t = 0;
+            AdamParams(size_t r, size_t c) : m_w(r, c), v_w(r, c) {
+                m_w.zero_init();
+                v_w.zero_init();
+            }
+        };
         Matrix w, d_w; 
         Matrix net, act, err, bias;
+        AdamParams adam;
+
         bool activate;
 
         FeedForward(size_t d_input, size_t d_output, size_t d_seq, bool activate = true);

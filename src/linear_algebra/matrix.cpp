@@ -170,7 +170,11 @@ const Matrix& Matrix::operator *= (float k ) {
 
 void Matrix::zero_init() {
    std::fill(this -> data ->begin(), this -> data -> end(), 0.);
-}
+};
+
+void Matrix::value_init(float val) {
+   std::fill(this -> data ->begin(), this -> data -> end(), val);
+};
 
  void Matrix::embedding_init(float sigma) {
     static std::mt19937 gen(std::random_device{}()); 

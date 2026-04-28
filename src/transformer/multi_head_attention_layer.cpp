@@ -7,17 +7,26 @@ MultiHeadAttention::MultiHeadAttention(size_t d_seq, size_t d_model, size_t head
                     w_k    (d_model, d_model ),
                     w_v    (d_model, d_model ),
                     w0     (d_model, d_model ),
+                    d_q    (d_model, d_model ),
+                    d_k    (d_model, d_model ),
+                    d_v    (d_model, d_model ),
+                    d_w0   (d_model, d_model ),
                     q      (d_seq  , d_model ),
                     k      (d_seq  , d_model ),
                     v      (d_seq  , d_model ),
                     d_seq  (d_seq            ),
                     d_model(d_model          ),
                     cache  (d_seq, d_model   ),
-                    heads  (heads            ) {
+                    heads  (heads            ),
+                    adam   (d_model, d_model ) {
     this -> w_q.xavier_init();
     this -> w_k.xavier_init();
     this -> w_v.xavier_init();
     this ->  w0.xavier_init();
+    this -> d_q.zero_init(); 
+    this -> d_k.zero_init(); 
+    this -> d_v.zero_init(); 
+    this -> d_w0.zero_init(); 
 
     for(size_t i = 0; i < heads; i++ ) {
         this -> cache.score_heads.push_back(Matrix(d_seq, d_seq) );
