@@ -19,6 +19,9 @@ public:
     
     const size_t dict_size, d_model, d_seq;
     dict_type dictionary;
+    std::vector<std::string> words;
+    std::vector<std::vector<size_t>> sequence;
+
     EmbeddingType embeddingtype;
 
     Tokenizer(std::vector<std::string> dictionary_list, size_t d_model, size_t d_seq, EmbeddingType type = EmbeddingType::ByWord);

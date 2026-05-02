@@ -5,6 +5,7 @@
 #include "token/tokenizer.h"
 #include "transformer/multi_head_attention_layer.h"
 #include "transformer/transformer_block.h"
+#include "transformer/transformer.h"
 
 #ifdef _OPENMP
     #include <omp.h>
@@ -91,13 +92,6 @@ int main() {
     slice.print();
     
     Matrix mat_softmax_ex(8, 9, false);
-    std::vector<std::array<float,2 >> k = mat_slice.layer_norm(mat_softmax_ex);
-
-    std::cout << "\nSlice Layernorm not inline\n\n";
-    mat_softmax_ex.print();
-
-    for( auto v: k ) 
-        std::cout << "\nMean: " << v[0] << ", Variance: " << v[1] <<"\n";
 
     Matrix mat_softmax(4, 4, false);
     Matrix dx(4, 4, false);
@@ -192,5 +186,36 @@ int main() {
     tb.final.act.print("FFN2+Resid");
     std::cout <<"\n";
     tb.ln_ffn.normalized_input.print("FFN Layernorm");
+
+    Transformer tr(6, 8, 2, 2, {"hallo", "mein", "freund", "wie", "gehts"}, EmbeddingType::ByWord);
+    tr.feed("hallo freund");
+    tr.tokenizer.d_embeddings.print("Embeddings");
+    tr.run(0);
+    size_t run = 0;
+    for(auto bl: tr.model) {
+        std::cout <<"Iteration " << run +1<< "\n";
+        bl.input.print("Input");
+        bl.mha.cache.output_w0.print("Attention Out");
+        bl.ln_attention.normalized_input.print("Normalize Attention");
+        bl.expansion.act.print("FFN 1");
+        bl.final.act.print("FFN 2");
+        bl.ln_ffn.normalized_input.print("FFN");
+
+        ++run;
+    }
+    tr.lm_head.logits_cache.print("Logits");
+    tr.lm_head.probs_cache.print("Propabilites");
+
+    size_t index = tr.predict_k(tr.lm_head.probs_cache, 3);
+    std::string word = tr.word_from_index(index);
+    std::vector<size_t> target = {0,1,3,1,2,1};
+    Matrix d_out(6, 5);
+    tr.lm_head.backward(target, tr.lm_head.logits_cache, d_out);
+    std::cout << "\nPredicted wort: " << word <<" \n";
+
+    tr.lm_head.d_embeddings.print("Embeddings gradient");
+    d_out.print("Transoformer gradient");
+    tr.lm_head.adam.m.print("Adam momentum");
+    tr.lm_head.adam.v.print("Adam velo");
     return 0;
 }

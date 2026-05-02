@@ -155,6 +155,16 @@ const Matrix& Matrix::operator *= (float k ) {
     }
  };
 
+ void Matrix::col_sums(Matrix& m) {
+   for(size_t j = 0; j < this -> cols; j++ ) {
+      float x = 0.f;
+      for(size_t i = 0; i < this -> rows; i++ ) {
+         x += (*this)(i,j);
+      }
+      m(0,j) = x;
+   }
+ }
+
  void Matrix::he_init() {
     // Bei He-Init ist oft nur die Anzahl der Eingänge (rows bei Gewichtsmatrix) entscheidend
     float limit = std::sqrt(6.0f / this -> rows); 
@@ -217,35 +227,6 @@ void Matrix::leaky_relu_backward(Matrix& dX) {
     }
 }
 
-statistics_block Matrix::layer_norm(Matrix& m) {
-    statistics_block memory = std::vector<std::array<float, 2>>();
-
-    for (size_t i = 0; i < this -> rows; ++i) {
-        // 1. Mittelwert (Mean) berechnen
-        float mean = 0.0f;
-        for (size_t j = 0; j < this -> cols; ++j) {
-            mean += (*this)(i, j);
-        }
-        mean /= this -> cols;
-
-        // 2. Varianz berechnen
-        float variance = 0.0f;
-        for (size_t j = 0; j < this -> cols; ++j) {
-            float diff = (*this)(i, j) - mean;
-            variance += diff * diff;
-        }
-        variance /= this -> cols;
-
-        // 3. Normalisieren
-        float inv_std = 1.0f / std::sqrt(variance + 1e-5f);
-        for (size_t j = 0; j < this -> cols; ++j) {
-            m(i, j) = ((*this)(i, j) - mean) * inv_std;
-         }
-         memory.push_back({mean, variance/inv_std});
-      }
-      return memory;
-  };
-
 void Matrix::layer_norm( Matrix& m, Matrix & beta, Matrix & gamma, std::vector<float>& means, std::vector<float>& inv_devs) {
    
     for (size_t i = 0; i < this -> rows; ++i) {
@@ -272,7 +253,22 @@ void Matrix::layer_norm( Matrix& m, Matrix & beta, Matrix & gamma, std::vector<f
          means[i]    = mean, 
          inv_devs[i] = inv_std;
       }
-}
+};
+
+void Matrix::layer_norm_backward( Matrix& g, Matrix& m, std::vector<float>& means, std::vector<float>& inv_devs, Matrix & gamma) {
+   for(size_t i = 0; i < this -> rows; i++ ) {
+      float sum_mean = 0;
+      float sum_std  = 0;
+      for(size_t j = 0; j < this -> cols;  j++ ) {
+         sum_mean += g(i,j);
+         sum_std  += g(i,j) * (*this)(i,j);
+      }
+      for(size_t j = 0; j < this -> cols;  j++ ) {
+         m(i,j) = ( gamma(0,j) * inv_devs[i]/ this -> cols ) * (this -> cols * g(i,j) - sum_mean - (*this)(i,j) * sum_std);
+      }
+   }
+};
+
 void Matrix::ms_softmax(Matrix& m) {
     for (size_t i = 0; i < this -> rows; ++i) {
         // 1. Mittelwert (Mean) berechnen
@@ -315,18 +311,15 @@ void Matrix::ms_softmax(Matrix& m) {
       }
   };
 
-  void Matrix::ms_softmax_backward(const Matrix& dX, Matrix& dY) {
+void Matrix::ms_softmax_backward(const Matrix& dX, Matrix& dY) {
       for (size_t i = 0; i < this -> rows; i++) {
+          float dot = 0.f;
          for (size_t j = 0; j < this -> cols; j++) {
-            float si = (*this)(i,j);
-            float res = 0.f;
-            // building relevant column of jakobi matrix on the fly and immediately calc dotproduct and resulting gradient
-            for(size_t k = 0; k < this -> cols; k++ ) {
-               float t = k == j ? 1. : 0.;
-               float sk = (*this)(i,k);
-               res += si*(t - sk) * dX(i, k); 
-            }
-            dY(i,j) = res;
+            dot += (*this)(i,j) * dX(i,j);
+         }
+         float res = 0.f;
+         for(size_t k = 0; k < this -> cols; k++ ) {
+            dY(i,k) = (*this)(i,k) * (dX(i,k) - dot); 
          }
       }
   };
@@ -358,6 +351,13 @@ void Matrix::ms_softmax(Matrix& m) {
 
    return m;
  }
+ std::vector<float> Matrix::get_row(size_t row) {
+   std::vector<float> out;
+   for(size_t j = 0; j < this -> cols; j++ ) {
+      out.push_back((*this)(row,j ));
+   }
+   return out;
+ };
  
  void Matrix::print(std::string label) {
     std::cout << "--- " << label << " ---" << std::endl;

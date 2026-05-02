@@ -4,12 +4,14 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <algorithm>
 #include <unordered_map>
 #include <sstream>
 #include "../linear_algebra/matrix.h"
 #include "transformer_block.h"
 #include "../token/tokenizer.h"
 #include "../consts.h"
+#include "lm_head.h"
 
 class Transformer {
 public:
@@ -19,8 +21,13 @@ public:
 
     Tokenizer tokenizer;
     std::vector<TransformerBlock> model;
+    LMHead lm_head;
     
-    void teach(std::string text);
+    void feed(std::string text);
+    void run(size_t input_index);
+    size_t predict(Matrix& res);
+    size_t predict_k(Matrix& res, size_t k );
+    std::string word_from_index(size_t index);
 };
 
 #endif

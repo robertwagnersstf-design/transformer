@@ -33,14 +33,16 @@ public:
     const Matrix& operator ! ();
     const Matrix& transpose();
 
+    const col_sums(Matrix& m);
+    
     const Matrix slice  (const size_t row_start, const size_t col_start, const size_t rows, const size_t cols );
     void deslice(const size_t row_start, const size_t col_start, Matrix& slice );
 
     void activate_relu( Matrix& m);
     void leaky_relu_backward(Matrix& dX);
 
-    statistics_block layer_norm( Matrix& m);
     void layer_norm( Matrix& m, Matrix & beta, Matrix & gamma, std::vector<float>& means, std::vector<float>& inv_devs);
+    void layer_norm_backward( Matrix& g, Matrix& m, std::vector<float>& means, std::vector<float>& inv_devs,Matrix & gamma);
 
     void ms_softmax( Matrix& m);
     void ms_softmax( );
@@ -57,6 +59,8 @@ public:
 
     Matrix copy();
     Matrix copy(Matrix& m);
+
+    std::vector<float> get_row(size_t row);
     
     // static stuff
     static void gemm(const Matrix& a, const Matrix& b, Matrix& target ) {
@@ -78,6 +82,20 @@ public:
             }
         }
     }
+
+    static void ewmm(const Matrix& a, const Matrix& b, Matrix& target ) {
+        if ( a.cols != b.cols || 
+             a.rows  != b.rows  ) {
+            throw std::runtime_error("Dimension mismatch!");
+        }
+
+        for(size_t i = 0; i < a.rows; i++ ) {
+            for(size_t j = 0; j < a.cols; j++ ) {
+                target(i, j) = a(i,j) * b(i,j);
+            }
+        }
+    }
+
     static void gema(const Matrix& a, const Matrix& b, Matrix& target ) {
         if (a.cols != b.cols ) {
             throw std::runtime_error("Dimension mismatch!");

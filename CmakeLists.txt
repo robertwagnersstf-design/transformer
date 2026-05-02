@@ -17,7 +17,10 @@ add_executable(transformer src/main.cpp
                            src/transformer/multi_head_attention_layer.cpp
                            src/transformer/layer_norm_cache.cpp
                            src/transformer/feed_forward_layer.cpp
-                           src/transformer/transformer_block.cpp)
+                           src/transformer/transformer_block.cpp
+                           src/transformer/transformer.cpp
+                           src/transformer/lm_head.cpp
+                           src/transformer/adam.cpp         )
 
 target_include_directories(transformer PUBLIC linear_algebra token, transformer)
 

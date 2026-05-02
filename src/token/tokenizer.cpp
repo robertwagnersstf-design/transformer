@@ -16,20 +16,25 @@ Tokenizer::Tokenizer(std::vector<std::string> dictionary_list, size_t d_model, s
                 input_token_pe    (                                           ),
                 input_token       (                                           ),
                 postional_encoding(d_seq, d_model                             ),
-                embeddingtype     (type                                       ) {
+                embeddingtype     (type                                       ),
+                sequence          (                                           ),
+                words             (                                           ) {
     size_t curr_idx = 3;
     this -> dictionary.insert(std::pair<std::string,size_t>("UNK", 0));
     this -> dictionary.insert(std::pair<std::string,size_t>("PAD", 1));
     this -> dictionary.insert(std::pair<std::string,size_t>("#"  , 2));
     
+    words = {"UNK", "PAD", "#"};
+
     for(auto word: dictionary_list) {
         std::pair<std::string,size_t> entry(word, curr_idx);
         this -> dictionary.insert(entry);
+        words.push_back(word);
         ++curr_idx;
     }
     this -> embeddings.embedding_init();
     this -> postional_encoding.positional_encoding_init();
-    
+
     this -> d_embeddings.zero_init();
     this -> m_embeddings.zero_init();
     this -> v_embeddings.zero_init();
@@ -38,6 +43,7 @@ Tokenizer::Tokenizer(std::vector<std::string> dictionary_list, size_t d_model, s
 Matrix& Tokenizer::text_to_input(const std::string& text ) {
     std::vector<std::string> tokens;
     std::string to_split = text;
+    std::vector<size_t> new_sequence;
 
     split_to_tokens(to_split, tokens, this -> embeddingtype == EmbeddingType::ByCharacter ? "" : " ");
 
@@ -53,6 +59,7 @@ Matrix& Tokenizer::text_to_input(const std::string& text ) {
         }
         for(size_t j = 0; j < this -> d_model; j++ ) {
             new_input(current_row, j ) = this -> embeddings(token_index, j);
+            new_sequence.push_back(token_index);
         } 
         ++current_row;
     }
@@ -60,17 +67,19 @@ Matrix& Tokenizer::text_to_input(const std::string& text ) {
         for(size_t i = current_row; i < this -> d_seq ; i++ ) {
             for(size_t j = 0; j < this -> d_model; j++ ) {
                 new_input(i, j ) = this -> embeddings(1, j); //Padding
+                new_sequence.push_back(1);
             }
         }
     }
     this -> input_token.push_back(new_input);
+    this -> sequence.push_back(new_sequence);
 
     Matrix::gema(new_input, this -> postional_encoding, new_pe);
 
     new_pe *= sqrt(float(this -> d_seq) );
     
     this -> input_token_pe.push_back(new_pe);
-    return new_input;
+    return new_pe;
 };
 
 void Tokenizer::split_to_tokens(const std::string& text, std::vector<std::string>& target, const std::string delimiter ) {
