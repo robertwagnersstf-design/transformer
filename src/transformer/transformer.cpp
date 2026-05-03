@@ -30,6 +30,25 @@ void Transformer::run( size_t input_index ) {
     this -> lm_head.forward(this -> model[this -> repetitions - 1 ].ln_ffn.normalized_input);
 };
 
+void Transformer::backprop(std::vector<size_t>&  target, size_t input_index ) {
+    this -> lm_head.backward(target, this -> model[this -> repetitions - 1].ln_ffn.normalized_input);
+    this -> model[this -> repetitions - 1].ln_ffn.backward(this -> lm_head.d_transformer_output);
+
+    for(size_t i = this -> repetitions - 2; i >= 0; i-- ) {
+        this -> model[i].backward(this -> model[i + 1].mha.cache.d_input);
+    }
+    this -> tokenizer.backwards(this -> model[0].mha.cache.d_input, input_index);
+};
+
+void Transformer::learn() {
+    this -> lm_head.learn();
+    for(size_t i = this -> repetitions - 1; i >= 0; i-- ) {
+        this -> model[i].learn();
+    }
+    this -> tokenizer.learn();
+};
+
+
 void Transformer::feed(std::string text ) {
     this -> tokenizer.text_to_input(text);
 };

@@ -13,7 +13,7 @@
 class LMHead {
 public:
     Matrix& embeddings, d_embeddings;
-
+    Matrix d_transformer_output;
     Matrix logits_cache, d_logits;
     Matrix probs_cache;
     
@@ -25,9 +25,11 @@ public:
 
     void forward(Matrix& transformer_output);
 
-    void backward(std::vector<size_t>&  target, Matrix& transformer_output, Matrix& d_transformer_output);
+    void backward(std::vector<size_t>&  target, Matrix& transformer_output);
 
     void find_max_idx();
+
+    void learn();
 };
 
 #endif

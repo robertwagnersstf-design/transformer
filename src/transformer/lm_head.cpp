@@ -9,6 +9,7 @@ LMHead::LMHead(Matrix& embeddings, size_t d_seq ):
          d_logits    (d_seq, embeddings.rows          ),
          probs_cache (d_seq, embeddings.rows          ),
          max_idx     (d_seq                           ),
+         d_transformer_output(d_seq, embeddings.cols  ),
          adam        (embeddings.rows, embeddings.cols) {};
 
 void LMHead::forward(Matrix& transformer_output) {
@@ -21,7 +22,7 @@ void LMHead::forward(Matrix& transformer_output) {
     this -> embeddings.transpose();    
 };
 
-void LMHead::backward(std::vector<size_t>&  target, Matrix& transformer_output, Matrix& d_transformer_output) {
+void LMHead::backward(std::vector<size_t>&  target, Matrix& transformer_output) {
     this -> probs_cache.copy(this -> d_logits);
 
     for(size_t i = 0; i < target.size(); i++ ) {
@@ -32,7 +33,7 @@ void LMHead::backward(std::vector<size_t>&  target, Matrix& transformer_output, 
 
     this -> d_logits.transpose();
 
-    Matrix::gemm(this -> d_logits, this-> embeddings, d_transformer_output );
+    Matrix::gemm(this -> d_logits, this-> embeddings, this -> d_transformer_output );
     this -> adam.step( this -> d_embeddings);
 };
 
@@ -48,6 +49,10 @@ void LMHead::find_max_idx() {
         }
         this -> max_idx[i] = max_idx;
     }
+};
+
+void LMHead::learn() {
+    this -> adam.learn(this ->embeddings );
 };
 
 #endif

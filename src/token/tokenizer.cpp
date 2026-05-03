@@ -7,8 +7,6 @@
 Tokenizer::Tokenizer(std::vector<std::string> dictionary_list, size_t d_model, size_t d_seq, EmbeddingType type ) : 
                 embeddings        (dictionary_list.size() + 3 , d_model, false),
                 d_embeddings      (dictionary_list.size() + 3 , d_model, false),
-                m_embeddings      (dictionary_list.size() + 3 , d_model, false),
-                v_embeddings      (dictionary_list.size() + 3 , d_model, false),
                 d_model           (d_model                                    ),
                 dict_size         (dictionary_list.size()                     ),
                 dictionary        (                                           ),
@@ -18,7 +16,8 @@ Tokenizer::Tokenizer(std::vector<std::string> dictionary_list, size_t d_model, s
                 postional_encoding(d_seq, d_model                             ),
                 embeddingtype     (type                                       ),
                 sequence          (                                           ),
-                words             (                                           ) {
+                words             (                                           ),
+                adam              (dictionary_list.size() + 3,d_model         ) {
     size_t curr_idx = 3;
     this -> dictionary.insert(std::pair<std::string,size_t>("UNK", 0));
     this -> dictionary.insert(std::pair<std::string,size_t>("PAD", 1));
@@ -36,8 +35,6 @@ Tokenizer::Tokenizer(std::vector<std::string> dictionary_list, size_t d_model, s
     this -> postional_encoding.positional_encoding_init();
 
     this -> d_embeddings.zero_init();
-    this -> m_embeddings.zero_init();
-    this -> v_embeddings.zero_init();
 };
 
 Matrix& Tokenizer::text_to_input(const std::string& text ) {
@@ -106,5 +103,19 @@ void Tokenizer::split_to_tokens(const std::string& text, std::vector<std::string
     }
 }
 
+void Tokenizer::backwards(Matrix & gradient, size_t seq_idx) {
+    this -> d_embeddings.zero_init();
+    for(size_t i = 0; i < this -> sequence[seq_idx].size(); i++ ) {
+        size_t token_index = this -> sequence[seq_idx][i];
+        for(size_t j = 0; j < this -> d_model; j++ ) {
+            this -> d_embeddings(token_index,j) += gradient(i,j);
+        }
+    }
+    this -> adam.step(this -> d_embeddings);
+};
+
+void Tokenizer::learn() {
+    this -> adam.learn(this -> embeddings );
+};
 
 #endif

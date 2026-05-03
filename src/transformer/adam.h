@@ -12,11 +12,13 @@
 
 class Adam {
 public:
-    Matrix m, v;
+    Matrix d_w, m, v;
     int t = 0;
     Adam(size_t r, size_t c);
+    void step();
     void step(Matrix& d_w);
     void learn(Matrix& w);
+    void store(Matrix& d_w);
 };
 
 #endif

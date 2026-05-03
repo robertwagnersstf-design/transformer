@@ -53,6 +53,11 @@ void  FeedForward::backward(Matrix& gradient) {
 
     this -> err.col_sums(this -> d_bias);
     this -> adam.step(this ->d_w);   
-    this -> adam_b(this -> d_bias);
+    this -> adam_b.step(this -> d_bias);
+};
+
+void FeedForward::learn() {
+    this -> adam.learn(this -> w );
+    this -> adam_b.learn(this -> bias);
 };
 #endif

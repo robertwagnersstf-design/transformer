@@ -13,10 +13,19 @@ MultiHeadAttention::MultiHeadAttention(size_t d_seq, size_t d_model, size_t head
                     b_k     (1      , d_model ),
                     b_v     (1      , d_model ),
                     b_w0    (1      , d_model ),
+
+                    d_bq    (1      , d_model ),
+                    d_bk    (1      , d_model ),
+                    d_bv    (1      , d_model ),
+                    d_bw0   (1      , d_model ),
                     //gradients
-                    d_q     (d_model, d_model ),
-                    d_k     (d_model, d_model ),
-                    d_v     (d_model, d_model ),
+                    d_q     (d_seq  , d_model ),
+                    d_k     (d_seq  , d_model ),
+                    d_v     (d_seq  , d_model ),
+
+                    d_wq    (d_model, d_model ),
+                    d_wk    (d_model, d_model ),
+                    d_wv    (d_model, d_model ),
                     d_w0    (d_model, d_model ),
                     //intermediate results
                     q       (d_seq  , d_model ),
@@ -45,10 +54,18 @@ MultiHeadAttention::MultiHeadAttention(size_t d_seq, size_t d_model, size_t head
     this -> d_k.zero_init(); 
     this -> d_v.zero_init(); 
     this -> d_w0.zero_init();
+    this -> d_wq.zero_init(); 
+    this -> d_wk.zero_init(); 
+    this -> d_wv.zero_init(); 
+    this -> d_w0.zero_init();
     this -> b_q.zero_init(); 
     this -> b_k.zero_init(); 
     this -> b_v.zero_init(); 
-    this -> b_w0.zero_init();  
+    this -> b_w0.zero_init();
+    this -> d_bq.zero_init(); 
+    this -> d_bk.zero_init(); 
+    this -> d_bv.zero_init(); 
+    this -> d_bw0.zero_init();   
 
     for(size_t i = 0; i < heads; i++ ) {
         this -> cache.score_heads.push_back(Matrix(d_seq, d_seq));
@@ -143,14 +160,15 @@ void MultiHeadAttention::apply_attention(Matrix& s_q, Matrix& s_k, Matrix& s_v, 
 };
 
 void MultiHeadAttention::backward_mha(Matrix & gradient) {
+    //Last step in fwd was output time w0, so output times gradient results in delta for w0
     this -> cache.output.transpose();
     Matrix::gemm(this -> cache.output, gradient, this -> d_w0);
     this -> cache.output.transpose();
 
-    gradient.col_sums(this-> b_w0);
+    gradient.col_sums(this-> d_bw0);
 
     this -> adam_w0.step (this -> d_w0);
-    this -> adam_bw0.step(this -> b_w0);
+    this -> adam_bw0.step(this -> d_bw0);
 
     this -> w0.transpose();
     Matrix::gemm(gradient, this -> w0, this -> cache.d_output);
@@ -177,13 +195,73 @@ void MultiHeadAttention::backward_mha(Matrix & gradient) {
         apply_backward_attention(s_q, s_k, s_v, ds_q, ds_k, ds_v, soft_score, d_score, s_grad );
         ++head;
     }
+
+    this -> cache.input.transpose();
+    Matrix::gemm(this -> cache.input, this -> d_q, this -> d_wq);
+    Matrix::gemm(this -> cache.input, this -> d_k, this -> d_wk);
+    Matrix::gemm(this -> cache.input, this -> d_v, this -> d_wv);
+    this -> cache.input.transpose();
+
+    this -> cache.d_input.zero_init();
+
+    this -> w_q.transpose();
+    Matrix::gemm(this -> d_q, this -> w_q, this -> cache.d_input);
+    this -> d_q.col_sums(this -> d_bq);
+    this -> w_q.transpose();
+
+    this -> w_k.transpose();
+    Matrix::gemm_accum(this -> d_k, this -> w_k, this -> cache.d_input);
+    this -> d_k.col_sums(this -> d_bk);
+    this -> w_k.transpose();
+
+    this -> w_v.transpose();
+    Matrix::gemm_accum(this -> d_v, this -> w_v, this -> cache.d_input);
+    this -> d_v.col_sums(this -> d_bv);
+    this -> w_v.transpose();
+
+    this -> adam_q  .step(this -> d_wq);
+    this -> adam_k  .step(this -> d_wk);
+    this -> adam_v  .step(this -> d_wv);
+    this -> adam_bq .step(this -> d_bq);
+    this -> adam_bk .step(this -> d_bk);
+    this -> adam_bv .step(this -> d_bv);
 };
 
 void MultiHeadAttention::apply_backward_attention(Matrix& s_q, Matrix& s_k, Matrix& s_v, Matrix& sd_q, Matrix& sd_k, Matrix& sd_v,Matrix& soft_score, Matrix& d_score, Matrix& s_grad ) {
+    // first we want to know, which participation our value matrix had in the error. Therefor we use the attentionmatirx to transfer that into it
+    // this is relevant, since the attentionmatrix affected, how much a specific vector from V was considered in the output, and therefor is now represented in the error
     soft_score.transpose();
     Matrix::gemm(soft_score, s_grad, sd_v);
     soft_score.transpose();
 
+    // now we want to move our gradient further back into the chain
+    // value vector here determines, what change in the attentionmatrix would affect changes in the output
+    // therefor here we get the errors of our attentionmatrix
+    Matrix d_scores_raw(soft_score.rows, soft_score.cols); 
+    s_v.transpose();
+    Matrix::gemm(s_grad, s_v, d_scores_raw);
+    s_v.transpose();
+    //move it back through our softmax
+    soft_score.ms_softmax_backward(d_scores_raw, d_score);
+    float scale = 1.0f / std::sqrt(static_cast<float>(this -> d_model/this->heads) );
+    // apply the scale since f'(a*f(b)) -> a*f'(b) 
+    d_score *= scale;
+
+    // now just transfer it through our s_q * s_k, to get their errors
+    Matrix::gemm(d_score, s_k, sd_q);
+    d_score.transpose();
+    Matrix::gemm(d_score, s_q, sd_k);
+    d_score.transpose();
 };
 
+void MultiHeadAttention::learn() {
+    this -> adam_q.learn(this -> w_q);
+    this -> adam_k.learn(this -> w_k);
+    this -> adam_v.learn(this -> w_v);
+    this -> adam_w0.learn(this -> w0);
+    this -> adam_bq.learn(this -> b_q);
+    this -> adam_bk.learn(this -> b_k);
+    this -> adam_bv.learn(this -> b_v);
+    this -> adam_bw0.learn(this -> b_w0);
+};
 #endif

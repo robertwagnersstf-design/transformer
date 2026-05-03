@@ -26,6 +26,8 @@ public:
         Matrix& forward(Matrix& input);
         Matrix& backward(Matrix& gradient);
 
+        void learn();
+
 };
 
 #endif

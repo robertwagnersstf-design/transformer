@@ -5,9 +5,23 @@
 
 
 Adam::Adam(size_t r, size_t c):
-    m(r,c),
-    v(r,c)  {};
+    m  (r,c),
+    v  (r,c),
+    d_w(r,c)  {
+        this -> m.zero_init();
+        this -> v.zero_init();
+        this -> d_w.zero_init();
+        this -> t = 1;
+    };
 
+void Adam::store(Matrix & d_w) {
+    this -> d_w += d_w;
+};
+
+void Adam::step() {
+    this -> step(this -> d_w);
+    this -> d_w.zero_init();
+}
 
 void Adam::step(Matrix& d_w) {
     for(size_t i = 0; i < this -> m.rows; i++ ) {
@@ -19,8 +33,8 @@ void Adam::step(Matrix& d_w) {
 }
 void Adam::learn(Matrix& w) {
     
-    float bc1 = 1.0f / (1.0f - pow(BETA1, t));
-    float bc2 = 1.0f / (1.0f - pow(BETA2, t));
+    float bc1 = 1.0f / (1.0f - pow(BETA1, this -> t));
+    float bc2 = 1.0f / (1.0f - pow(BETA2, this -> t));
     
     for(size_t i = 0; i < this -> m.rows; i++ ) {
         for(size_t j = 0; j < this -> m.cols; j++ ) {

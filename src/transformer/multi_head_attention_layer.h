@@ -14,6 +14,7 @@ class MultiHeadAttention {
 public:
     struct AttentionCache {
         Matrix input;
+        Matrix d_input;
         Matrix q, k, v;
         Matrix score  ;
         Matrix output ;
@@ -22,13 +23,15 @@ public:
         std::vector<Matrix> score_heads;
         std::vector<Matrix> d_out_heads;
         AttentionCache(size_t rows, size_t cols) 
-        : input(rows, cols), q(rows, cols), k(rows, cols), v(rows, cols), score(rows, rows), output(rows, cols), d_output(rows, rows), score_heads(), d_out_heads(), output_w0(rows, cols) {}
+        : input(rows, cols), d_input(rows, cols), q(rows, cols), k(rows, cols), v(rows, cols), score(rows, rows), output(rows, cols), d_output(rows, rows), score_heads(), d_out_heads(), output_w0(rows, cols) {}
     };
 
-    Matrix w_q,w_k,w_v, w0 , 
-           q, k, v         ,
-           d_q,d_k,d_v,d_w0,
-           b_q,b_k,b_v,b_w0;
+    Matrix w_q ,w_k ,w_v,w0 ,
+           d_wq,d_wk,d_wv   , 
+           q   , k  , v     ,
+           d_q,d_k,d_v,d_w0 ,
+           b_q,b_k,b_v,b_w0 ,
+           d_bq,d_bk,d_bv,d_bw0;
     
     Adam adam_q , adam_v , adam_k , adam_w0,
          adam_bq, adam_bv, adam_bk, adam_bw0;
@@ -43,6 +46,7 @@ public:
     void apply_attention(Matrix& s_q, Matrix& s_k, Matrix& s_v, Matrix& s_score, Matrix& s_out );
     void apply_backward_attention(Matrix& s_q, Matrix& s_k, Matrix& s_v, Matrix& sd_q, Matrix& sd_k, Matrix& sd_v, Matrix& soft_score, Matrix& d_score, Matrix& s_grad);
     void backward_mha(Matrix & gradient);
+    void learn();
 };
 
 #endif

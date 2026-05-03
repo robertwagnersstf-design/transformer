@@ -25,6 +25,10 @@ public:
     
     void feed(std::string text);
     void run(size_t input_index);
+    void backprop(std::vector<size_t>&  target, size_t run_index);
+    
+    void learn();
+
     size_t predict(Matrix& res);
     size_t predict_k(Matrix& res, size_t k );
     std::string word_from_index(size_t index);

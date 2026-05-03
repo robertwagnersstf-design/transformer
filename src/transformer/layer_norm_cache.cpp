@@ -37,4 +37,10 @@ Matrix&  LayerNormCache::backward(Matrix& gradient) {
     this -> adam_beta.step(this -> d_beta);
     this -> adam_gamma.step(this -> d_gamma);
 };
+
+void LayerNormCache::learn() {
+    this -> adam_beta.learn(this ->beta );
+    this -> adam_gamma.learn( this -> gamma );
+};
+
 #endif
