@@ -36,6 +36,8 @@ Matrix&  LayerNormCache::backward(Matrix& gradient) {
     }
     this -> adam_beta.step(this -> d_beta);
     this -> adam_gamma.step(this -> d_gamma);
+
+    return this -> d_normalized_input;
 };
 
 void LayerNormCache::learn() {

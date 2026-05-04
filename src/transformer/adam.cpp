@@ -19,6 +19,8 @@ void Adam::store(Matrix & d_w) {
 };
 
 void Adam::step() {
+    this -> d_w *= 1/BATCHSIZE;
+
     this -> step(this -> d_w);
     this -> d_w.zero_init();
 }
@@ -40,6 +42,7 @@ void Adam::learn(Matrix& w) {
         for(size_t j = 0; j < this -> m.cols; j++ ) {
             float m = this -> m(i, j) * bc1;
             float v = this -> v(i, j) * bc2;
+            //std::cout << "W: " << w(i,j) <<", delta: " << (m/(sqrt(v)+EPSILON) * ALPHA) <<"\n";
             w(i,j) -= m/(sqrt(v)+EPSILON) * ALPHA;
         }
     }

@@ -56,16 +56,16 @@ Matrix& Tokenizer::text_to_input(const std::string& text ) {
         }
         for(size_t j = 0; j < this -> d_model; j++ ) {
             new_input(current_row, j ) = this -> embeddings(token_index, j);
-            new_sequence.push_back(token_index);
         } 
+        new_sequence.push_back(token_index);
         ++current_row;
     }
     if(current_row < this -> d_seq ) {
         for(size_t i = current_row; i < this -> d_seq ; i++ ) {
             for(size_t j = 0; j < this -> d_model; j++ ) {
                 new_input(i, j ) = this -> embeddings(1, j); //Padding
-                new_sequence.push_back(1);
             }
+            new_sequence.push_back(1);
         }
     }
     this -> input_token.push_back(new_input);

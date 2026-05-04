@@ -1,7 +1,7 @@
 #include "multi_head_attention_layer.h"
 #ifndef MULTI_HEAD_ATTENTION_CPP
 #define MULTI_HEAD_ATTENTION_CPP
-
+//see https://jalammar.github.io/illustrated-transformer/ for insights into that mechanism
 MultiHeadAttention::MultiHeadAttention(size_t d_seq, size_t d_model, size_t heads):
                     //weights
                     w_q     (d_model, d_model ),
@@ -41,10 +41,10 @@ MultiHeadAttention::MultiHeadAttention(size_t d_seq, size_t d_model, size_t head
                     adam_v  (d_model, d_model ), 
                     adam_k  (d_model, d_model ), 
                     adam_w0 (d_model, d_model ),
-                    adam_bq (d_model, d_model ), 
-                    adam_bv (d_model, d_model ), 
-                    adam_bk (d_model, d_model ), 
-                    adam_bw0(d_model, d_model )
+                    adam_bq (1      , d_model ), 
+                    adam_bv (1      , d_model ), 
+                    adam_bk (1      , d_model ), 
+                    adam_bw0(1      , d_model )
                     {
     this -> w_q.xavier_init();
     this -> w_k.xavier_init();
@@ -106,7 +106,7 @@ void MultiHeadAttention::forward(Matrix & input) {
     this -> cache.output += this -> b_w0;
 };
 
-void MultiHeadAttention::forward_mha(Matrix & input) {
+Matrix& MultiHeadAttention::forward_mha(Matrix & input) {
     input.copy(this -> cache.input);
     
     Matrix::gemm(input, this -> w_q, this -> q);
@@ -139,7 +139,9 @@ void MultiHeadAttention::forward_mha(Matrix & input) {
         ++head;
     }
     Matrix::gemm(this -> cache.output, this -> w0, this -> cache.output_w0);
-    this -> cache.output += this -> b_w0;
+    this -> cache.output_w0 += this -> b_w0;
+
+    return this -> cache.output_w0;
 };
 
 void MultiHeadAttention::apply_attention(Matrix& s_q, Matrix& s_k, Matrix& s_v, Matrix& s_score, Matrix& s_out ) {
@@ -159,7 +161,7 @@ void MultiHeadAttention::apply_attention(Matrix& s_q, Matrix& s_k, Matrix& s_v, 
     Matrix::gemm(s_score, s_v, s_out);
 };
 
-void MultiHeadAttention::backward_mha(Matrix & gradient) {
+Matrix& MultiHeadAttention::backward_mha(Matrix & gradient) {
     //Last step in fwd was output time w0, so output times gradient results in delta for w0
     this -> cache.output.transpose();
     Matrix::gemm(this -> cache.output, gradient, this -> d_w0);
@@ -225,6 +227,8 @@ void MultiHeadAttention::backward_mha(Matrix & gradient) {
     this -> adam_bq .step(this -> d_bq);
     this -> adam_bk .step(this -> d_bk);
     this -> adam_bv .step(this -> d_bv);
+
+    return this -> cache.d_input;
 };
 
 void MultiHeadAttention::apply_backward_attention(Matrix& s_q, Matrix& s_k, Matrix& s_v, Matrix& sd_q, Matrix& sd_k, Matrix& sd_v,Matrix& soft_score, Matrix& d_score, Matrix& s_grad ) {

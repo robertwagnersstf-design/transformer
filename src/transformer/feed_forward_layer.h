@@ -21,7 +21,7 @@ public:
         FeedForward(size_t d_input, size_t d_output, size_t d_seq, bool activate = true);
 
         Matrix& forward(Matrix& input);
-        void backward(Matrix& gradient );
+        Matrix& backward(Matrix& gradient );
 
         void learn();
 };

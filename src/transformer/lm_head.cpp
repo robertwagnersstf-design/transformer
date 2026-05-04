@@ -12,21 +12,23 @@ LMHead::LMHead(Matrix& embeddings, size_t d_seq ):
          d_transformer_output(d_seq, embeddings.cols  ),
          adam        (embeddings.rows, embeddings.cols) {};
 
-void LMHead::forward(Matrix& transformer_output) {
+Matrix& LMHead::forward(Matrix& transformer_output) {
     this -> embeddings.transpose();
 
     Matrix::gemm(transformer_output, this -> embeddings, this -> logits_cache);
 
     this -> logits_cache.ms_softmax(this -> probs_cache);
 
-    this -> embeddings.transpose();    
+    this -> embeddings.transpose();
+
+    return this -> probs_cache; 
 };
 
-void LMHead::backward(std::vector<size_t>&  target, Matrix& transformer_output) {
+Matrix& LMHead::backward(std::vector<size_t>&  target, Matrix& transformer_output) {
     this -> probs_cache.copy(this -> d_logits);
 
     d_logits.set_row(d_logits.rows - 1, 0.f);
-    
+
     for(size_t i = 0; i < target.size() - 1; i++ ) {
         this -> d_logits(i, target[i + 1]) -= 1.f;
     }
@@ -37,20 +39,8 @@ void LMHead::backward(std::vector<size_t>&  target, Matrix& transformer_output) 
 
     Matrix::gemm(this -> d_logits, this-> embeddings, this -> d_transformer_output );
     this -> adam.step( this -> d_embeddings);
-};
 
-void LMHead::find_max_idx() {
-    for(size_t i = 0; i < this -> d_logits.rows; i++) {
-        float max_val = -10000.;
-        size_t max_idx = 0;
-        for(size_t j = 0; j < this -> d_logits.cols; i++) {
-            if( this -> d_logits(i,j) > max_val) {
-                max_val = d_logits(i,j);
-                max_idx = j;
-            }
-        }
-        this -> max_idx[i] = max_idx;
-    }
+    return this -> d_transformer_output;
 };
 
 void LMHead::learn() {

@@ -66,7 +66,6 @@ const Matrix& Matrix::operator +=(const Matrix& m ) {
    if (this->cols != m.cols ) {
       throw std::runtime_error("Dimension mismatch!");
    }
-   // schnelle variante für den standardfall
   if (m.rows == 1 ) {
       for(size_t i = 0; i < this -> rows; i++ ) {
          for(size_t j = 0; j < this -> cols; j++ ) {
@@ -222,7 +221,7 @@ void Matrix::leaky_relu_backward(Matrix& dX) {
     for (size_t i = 0; i < this -> rows; ++i) {
         for (size_t j = 0; j < this -> cols; ++j) {
             float val = (*this)(i, j);
-            dX(i, j) *= (val > 0) ? 1.0f : RELU_LEAKAGE;
+            dX(i, j) = (val > 0) ? 1.0f : RELU_LEAKAGE;
         }
     }
 }
@@ -368,7 +367,7 @@ void Matrix::ms_softmax_backward(const Matrix& dX, Matrix& dY) {
  void Matrix::print(std::string label) {
     std::cout << "--- " << label << " ---" << std::endl;
     // Festlegen: 2 Nachkommastellen, feste Breite von 10 Zeichen
-    std::cout << std::fixed << std::setprecision(4); 
+    std::cout << std::fixed << std::setprecision(9); 
     
     for (size_t i = 0; i < rows; ++i) {
         for (size_t j = 0; j < cols; ++j) {

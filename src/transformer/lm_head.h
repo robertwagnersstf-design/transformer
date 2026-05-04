@@ -23,11 +23,9 @@ public:
 
     LMHead(Matrix& embeddings, size_t d_seq );
 
-    void forward(Matrix& transformer_output);
+    Matrix& forward(Matrix& transformer_output);
 
-    void backward(std::vector<size_t>&  target, Matrix& transformer_output);
-
-    void find_max_idx();
+    Matrix& backward(std::vector<size_t>&  target, Matrix& transformer_output);
 
     void learn();
 };

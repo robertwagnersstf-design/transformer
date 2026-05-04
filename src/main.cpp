@@ -210,12 +210,81 @@ int main() {
     std::string word = tr.word_from_index(index);
     std::vector<size_t> target = {0,1,3,1,2,1};
     Matrix d_out(6, 5);
-    tr.lm_head.backward(target, tr.lm_head.logits_cache, d_out);
+    tr.lm_head.backward(target, tr.lm_head.logits_cache);
     std::cout << "\nPredicted wort: " << word <<" \n";
 
     tr.lm_head.d_embeddings.print("Embeddings gradient");
-    d_out.print("Transoformer gradient");
+    tr.lm_head.d_logits.print("Logits gradient");
+    tr.lm_head.d_transformer_output.print("Transformer gradient");
     tr.lm_head.adam.m.print("Adam momentum");
     tr.lm_head.adam.v.print("Adam velo");
+
+    tr.model[1].ln_ffn.backward(tr.lm_head.d_transformer_output);
+    tr.model[1].ln_ffn.d_normalized_input.print("Gradient Last Normalization");
+    tr.model[1].ln_ffn.d_beta.print("Gradient Beta");
+    tr.model[1].ln_ffn.d_gamma.print("Gradient Gamma");
+
+    tr.model[1].final.backward(tr.model[1].ln_ffn.d_normalized_input);
+    tr.model[1].final.net.print("Net Last FFN Layer");
+    tr.model[1].final.d_net.print("Gradient Net Last FFN Layer");
+    tr.model[1].final.err.print("Gradient Last FFN Layer");
+    tr.model[1].final.d_w.print("Delta W's last FFN Layer");
+    tr.model[1].final.d_bias.print("Delta Bias last FFN Layer");
+    tr.model[1].final.d_error.print("Precalculated error times weights for next Layer");
+
+    tr.model[1].expansion.backward(tr.model[1].final.d_error);
+    tr.model[1].expansion.net.print("Net Expansion Layer");
+    tr.model[1].expansion.d_net.print("Net' Expansion FFN Layer");
+    tr.model[1].expansion.d_error.print("Gradient Expansion Layer");
+    tr.model[1].expansion.d_w.print("Delta W's Expansion Layer");
+    tr.model[1].expansion.d_bias.print("Delta Bias Expansion Layer");
+
+    tr.model[1].expansion.d_error +=  tr.lm_head.d_transformer_output;
+    tr.model[1].expansion.d_error.print("Gradient Expansion FFN Layer with Residual Connection from Transformer output");
+
+    tr.model[1].ln_attention.backward(tr.model[1].expansion.d_error);
+    tr.model[1].ln_attention.d_normalized_input.print("Gradient First Normalization");
+    tr.model[1].ln_attention.d_beta.print("Gradient Beta First Normalization");
+    tr.model[1].ln_attention.d_gamma.print("Gradient Gamma First Normalization");
+
+    tr.model[1].mha.backward_mha(tr.model[1].ln_attention.d_normalized_input);
+
+    size_t idx = 1;
+    for(auto v: tr.model[1].mha.cache.d_out_heads ) {
+        v.print("Backprop Head Score" + std::to_string(idx));
+        ++ idx;
+    }
+
+    tr.model[1].mha.q.print("Q");
+    tr.model[1].mha.k.print("K");
+    tr.model[1].mha.v.print("V");
+    tr.model[1].mha.w0.print("W0");
+
+    tr.model[1].mha.d_q.print("D_Q");
+    tr.model[1].mha.d_k.print("D_K");
+    tr.model[1].mha.d_v.print("D_V");
+
+    tr.model[1].mha.d_wq.print("D_WQ");
+    tr.model[1].mha.d_wk.print("D_WK");
+    tr.model[1].mha.d_wv.print("D_WV");
+    tr.model[1].mha.d_w0.print("D_W0");
+
+    tr.model[1].mha.cache.d_input.print("Gradient to pass to next layer from attention");
+
+    tr.tokenizer.backwards(tr.model[1].mha.cache.d_input, 0);
+
+    std::cout << "SEQUENCE: \n";
+    for(auto val: tr.tokenizer.sequence[0]) 
+        std::cout << val << ",";
+
+    std::cout << "\n";
+    tr.tokenizer.embeddings.print("EMBEDDINGS");
+    tr.tokenizer.d_embeddings.print("D_EMBEDDINGS");
+
+    tr.learn();
+    tr.model[1].mha.adam_q.m.print("AdamQ expansion learned");
+    tr.model[1].mha.adam_bq.m.print("AdamBQ expansion learned");
+    tr.lm_head.adam.m.print("LM Head expansion learned");
+    tr.model[1].ln_ffn.adam_beta.m.print("LM Head expansion learned");
     return 0;
 }
