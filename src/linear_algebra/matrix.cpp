@@ -358,6 +358,12 @@ void Matrix::ms_softmax_backward(const Matrix& dX, Matrix& dY) {
    }
    return out;
  };
+
+ void Matrix::set_row(size_t row, float value) {
+   for(size_t j = 0; j < this -> cols; j++ ) {
+      (*this)(row,j ) = value;
+   }
+ };
  
  void Matrix::print(std::string label) {
     std::cout << "--- " << label << " ---" << std::endl;

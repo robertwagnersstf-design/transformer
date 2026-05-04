@@ -25,8 +25,10 @@ void LMHead::forward(Matrix& transformer_output) {
 void LMHead::backward(std::vector<size_t>&  target, Matrix& transformer_output) {
     this -> probs_cache.copy(this -> d_logits);
 
-    for(size_t i = 0; i < target.size(); i++ ) {
-        this -> d_logits(i, target[i]) -= 1;
+    d_logits.set_row(d_logits.rows - 1, 0.f);
+    
+    for(size_t i = 0; i < target.size() - 1; i++ ) {
+        this -> d_logits(i, target[i + 1]) -= 1.f;
     }
     this -> d_logits.transpose();
     Matrix::gemm(this -> d_logits, transformer_output, this -> d_embeddings );

@@ -60,7 +60,9 @@ public:
     Matrix copy();
     Matrix copy(Matrix& m);
 
-    std::vector<float> get_row(size_t row);
+    std::vector<float> get_row(size_t row); 
+
+    void set_row(size_t row, float value);
     
     // static stuff
     static void gemm(const Matrix& a, const Matrix& b, Matrix& target ) {

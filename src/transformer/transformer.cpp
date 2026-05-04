@@ -32,17 +32,32 @@ void Transformer::run( size_t input_index ) {
 
 void Transformer::backprop(std::vector<size_t>&  target, size_t input_index ) {
     this -> lm_head.backward(target, this -> model[this -> repetitions - 1].ln_ffn.normalized_input);
-    this -> model[this -> repetitions - 1].ln_ffn.backward(this -> lm_head.d_transformer_output);
+    this -> model[this -> repetitions - 1].backward(this -> lm_head.d_transformer_output);
 
-    for(size_t i = this -> repetitions - 2; i >= 0; i-- ) {
+    for(int i = this -> repetitions - 2; i >= 0; i-- ) {
         this -> model[i].backward(this -> model[i + 1].mha.cache.d_input);
     }
     this -> tokenizer.backwards(this -> model[0].mha.cache.d_input, input_index);
+
+    if (this -> run_count % LOSS_CTR == 0 ) {
+        this -> calc_loss(target);
+    }
+    ++ this -> run_count;
+};
+
+void Transformer::calc_loss(std::vector<size_t>&  target) {
+    float sum_ln = 0.f;
+    for(size_t i = 0; i < target.size() - 1; i++ ) {
+        sum_ln += log(target[i + 1] );
+    }
+    sum_ln /= float(target.size() - 1);
+
+    std::cout <<"\n-------  Loss of Run " << this -> run_count << ": " << sum_ln <<" --------\n\n";
 };
 
 void Transformer::learn() {
     this -> lm_head.learn();
-    for(size_t i = this -> repetitions - 1; i >= 0; i-- ) {
+    for(int i = this -> repetitions - 1; i >= 0; i-- ) {
         this -> model[i].learn();
     }
     this -> tokenizer.learn();
