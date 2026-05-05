@@ -323,6 +323,22 @@ void Matrix::ms_softmax_backward(const Matrix& dX, Matrix& dY) {
       }
   };
 
+void Matrix::clip_gradients() {
+    float sum_sq = 0.0f;
+    // 1. Berechne die L2-Norm (Euklidische Länge)
+    for (size_t i = 0; i < rows * cols; i++) {
+        sum_sq += (*this -> data)[i] * (*this -> data)[i];
+    }
+    // 2. Wenn die Norm zu groß ist, skaliere alles runter
+    if (sum_sq > GRADIENT_THRESHOLD) {
+        float norm = std::sqrt(sum_sq);
+        float scale_factor = GRADIENT_THRESHOLD / norm;
+        for (size_t i = 0; i < rows * cols; i++) {
+            (*this -> data)[i] *= scale_factor;
+        }
+    }
+};
+
  Matrix Matrix::copy() {
    Matrix m( this -> rows, this -> cols );
    m.transposed = this -> transposed;

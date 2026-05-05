@@ -162,15 +162,13 @@ void MultiHeadAttention::apply_attention(Matrix& s_q, Matrix& s_k, Matrix& s_v, 
 };
 
 Matrix& MultiHeadAttention::backward_mha(Matrix & gradient) {
+    
     //Last step in fwd was output time w0, so output times gradient results in delta for w0
     this -> cache.output.transpose();
     Matrix::gemm(this -> cache.output, gradient, this -> d_w0);
     this -> cache.output.transpose();
 
     gradient.col_sums(this-> d_bw0);
-
-    this -> adam_w0.step (this -> d_w0);
-    this -> adam_bw0.step(this -> d_bw0);
 
     this -> w0.transpose();
     Matrix::gemm(gradient, this -> w0, this -> cache.d_output);
@@ -220,14 +218,7 @@ Matrix& MultiHeadAttention::backward_mha(Matrix & gradient) {
     Matrix::gemm_accum(this -> d_v, this -> w_v, this -> cache.d_input);
     this -> d_v.col_sums(this -> d_bv);
     this -> w_v.transpose();
-
-    this -> adam_q  .step(this -> d_wq);
-    this -> adam_k  .step(this -> d_wk);
-    this -> adam_v  .step(this -> d_wv);
-    this -> adam_bq .step(this -> d_bq);
-    this -> adam_bk .step(this -> d_bk);
-    this -> adam_bv .step(this -> d_bv);
-
+  
     return this -> cache.d_input;
 };
 
@@ -250,6 +241,7 @@ void MultiHeadAttention::apply_backward_attention(Matrix& s_q, Matrix& s_k, Matr
     float scale = 1.0f / std::sqrt(static_cast<float>(this -> d_model/this->heads) );
     // apply the scale since f'(a*f(b)) -> a*f'(b) 
     d_score *= scale;
+    //d_score.clip_gradients();
 
     // now just transfer it through our s_q * s_k, to get their errors
     Matrix::gemm(d_score, s_k, sd_q);
@@ -268,4 +260,17 @@ void MultiHeadAttention::learn() {
     this -> adam_bv.learn(this -> b_v);
     this -> adam_bw0.learn(this -> b_w0);
 };
+
+void MultiHeadAttention::step() {
+    this -> adam_w0.step (this -> d_w0);
+    this -> adam_bw0.step(this -> d_bw0);
+    this -> adam_q  .step(this -> d_wq);
+    this -> adam_k  .step(this -> d_wk);
+    this -> adam_v  .step(this -> d_wv);
+    this -> adam_bq .step(this -> d_bq);
+    this -> adam_bk .step(this -> d_bk);
+    this -> adam_bv .step(this -> d_bv);
+};
+
+
 #endif

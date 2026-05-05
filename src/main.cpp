@@ -286,5 +286,9 @@ int main() {
     tr.model[1].mha.adam_bq.m.print("AdamBQ expansion learned");
     tr.lm_head.adam.m.print("LM Head expansion learned");
     tr.model[1].ln_ffn.adam_beta.m.print("LM Head expansion learned");
+
+    Transformer tr_test(11, 6, 2, 2, {"Und", "bist", "du", "nicht", "willig", "so", "brauch", "ich", "Gewalt"}, EmbeddingType::ByWord);
+    tr_test.training_loop({"Und bist du nicht willig so brauch ich Gewalt #"});
+
     return 0;
 }

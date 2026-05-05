@@ -17,13 +17,14 @@ Tokenizer::Tokenizer(std::vector<std::string> dictionary_list, size_t d_model, s
                 embeddingtype     (type                                       ),
                 sequence          (                                           ),
                 words             (                                           ),
-                adam              (dictionary_list.size() + 3,d_model         ) {
+                adam              (dictionary_list.size() + 3,d_model         ),
+                padding_start_index(                                          ) {
     size_t curr_idx = 3;
-    this -> dictionary.insert(std::pair<std::string,size_t>("UNK", 0));
-    this -> dictionary.insert(std::pair<std::string,size_t>("PAD", 1));
-    this -> dictionary.insert(std::pair<std::string,size_t>("#"  , 2));
+    this -> dictionary.insert(std::pair<std::string,size_t>("*", 0));
+    this -> dictionary.insert(std::pair<std::string,size_t>("^", 1));
+    this -> dictionary.insert(std::pair<std::string,size_t>("#", 2));
     
-    words = {"UNK", "PAD", "#"};
+    words = {"*", "^", "#"};
 
     for(auto word: dictionary_list) {
         std::pair<std::string,size_t> entry(word, curr_idx);
@@ -61,6 +62,7 @@ Matrix& Tokenizer::text_to_input(const std::string& text ) {
         ++current_row;
     }
     if(current_row < this -> d_seq ) {
+        this -> padding_start_index.push_back(current_row);
         for(size_t i = current_row; i < this -> d_seq ; i++ ) {
             for(size_t j = 0; j < this -> d_model; j++ ) {
                 new_input(i, j ) = this -> embeddings(1, j); //Padding
@@ -111,11 +113,15 @@ void Tokenizer::backwards(Matrix & gradient, size_t seq_idx) {
             this -> d_embeddings(token_index,j) += gradient(i,j);
         }
     }
-    this -> adam.step(this -> d_embeddings);
+    
 };
 
 void Tokenizer::learn() {
     this -> adam.learn(this -> embeddings );
 };
+void Tokenizer::step() {
+    this -> adam.step(this -> d_embeddings);
+};
+
 
 #endif

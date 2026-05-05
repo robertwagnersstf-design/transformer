@@ -28,6 +28,7 @@ public:
     Matrix& backward(std::vector<size_t>&  target, Matrix& transformer_output);
 
     void learn();
+    void step();
 };
 
 #endif

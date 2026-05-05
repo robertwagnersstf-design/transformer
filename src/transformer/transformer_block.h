@@ -19,13 +19,17 @@ public:
     LayerNormCache ln_attention, ln_ffn;
     FeedForward expansion, final;
     
-    Matrix input;
+    Matrix input, ffn_input,block_output, grad_mid, grad_final;
     MultiHeadAttention mha;
 
     Matrix& forward(Matrix& input);
     Matrix& backward(Matrix& gradient);
 
     void learn();
+    void step();
+
+    void squared_gradient_sum();
+    void apply_scale(float f);
 };
 
 #endif

@@ -20,19 +20,31 @@ void Adam::store(Matrix & d_w) {
 
 void Adam::step() {
     this -> d_w *= 1/BATCHSIZE;
-
-    this -> step(this -> d_w);
+    this -> d_w.clip_gradients();
+    this -> step_local();
     this -> d_w.zero_init();
 }
 
 void Adam::step(Matrix& d_w) {
+    d_w.clip_gradients();
+
     for(size_t i = 0; i < this -> m.rows; i++ ) {
         for(size_t j = 0; j < this -> m.cols; j++ ) {
             this -> m(i,j) = BETA1*this -> m(i,j) + (1-BETA1) * d_w(i,j);
             this -> v(i,j) = BETA2*this -> v(i,j) + (1-BETA2) * d_w(i,j)*d_w(i,j);
         }
     }
+};
+
+void Adam::step_local() {
+    for(size_t i = 0; i < this -> m.rows; i++ ) {
+        for(size_t j = 0; j < this -> m.cols; j++ ) {
+            this -> m(i,j) = BETA1*this -> m(i,j) + (1-BETA1) * this -> d_w(i,j);
+            this -> v(i,j) = BETA2*this -> v(i,j) + (1-BETA2) * this -> d_w(i,j)*this -> d_w(i,j);
+        }
+    }
 }
+
 void Adam::learn(Matrix& w) {
     
     float bc1 = 1.0f / (1.0f - pow(BETA1, this -> t));

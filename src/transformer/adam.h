@@ -17,6 +17,7 @@ public:
     Adam(size_t r, size_t c);
     void step();
     void step(Matrix& d_w);
+    void step_local();
     void learn(Matrix& w);
     void store(Matrix& d_w);
 };

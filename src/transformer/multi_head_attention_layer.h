@@ -46,7 +46,12 @@ public:
     void apply_attention(Matrix& s_q, Matrix& s_k, Matrix& s_v, Matrix& s_score, Matrix& s_out );
     void apply_backward_attention(Matrix& s_q, Matrix& s_k, Matrix& s_v, Matrix& sd_q, Matrix& sd_k, Matrix& sd_v, Matrix& soft_score, Matrix& d_score, Matrix& s_grad);
     Matrix& backward_mha(Matrix & gradient);
+
     void learn();
+    void step();
+
+    void squared_gradient_sum();
+    void apply_scale(float f);
 };
 
 #endif

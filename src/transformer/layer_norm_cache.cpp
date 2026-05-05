@@ -27,22 +27,28 @@ Matrix&  LayerNormCache::forward(Matrix& input) {
 };
 
 Matrix&  LayerNormCache::backward(Matrix& gradient) {
+    this -> d_beta.zero_init();
+    this -> d_gamma.zero_init();
+
     this -> normalized_input.layer_norm_backward(gradient, this -> d_normalized_input, this -> means, this -> inv_stds, this -> gamma );
+
     for(size_t j = 0; j < gradient.cols;  j++ ) {
         for(size_t i = 0; i < gradient.rows;  i++ ) {
             this -> d_beta (0,j) += gradient(i,j);
             this -> d_gamma(0,j) += gradient(i,j) * this -> normalized_input(i,j); 
         }
     }
-    this -> adam_beta.step(this -> d_beta);
-    this -> adam_gamma.step(this -> d_gamma);
-
     return this -> d_normalized_input;
 };
 
 void LayerNormCache::learn() {
     this -> adam_beta.learn(this ->beta );
     this -> adam_gamma.learn( this -> gamma );
+};
+
+void LayerNormCache::step() {
+    this -> adam_beta.step(this -> d_beta);
+    this -> adam_gamma.step(this -> d_gamma);
 };
 
 #endif

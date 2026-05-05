@@ -37,7 +37,9 @@ Matrix&  FeedForward::forward(Matrix& input) {
 };
 
 Matrix&  FeedForward::backward(Matrix& gradient) {
-    
+    this -> d_w.zero_init();
+    this -> d_bias.zero_init();
+
     if( this -> activate )
         this -> net.leaky_relu_backward(this -> d_net);
     else 
@@ -54,8 +56,7 @@ Matrix&  FeedForward::backward(Matrix& gradient) {
     this -> w.transpose();
 
     this -> err.col_sums(this -> d_bias);
-    this -> adam.step(this ->d_w);   
-    this -> adam_b.step(this -> d_bias);
+
     return this -> d_error;
 };
 
@@ -63,4 +64,10 @@ void FeedForward::learn() {
     this -> adam.learn(this -> w );
     this -> adam_b.learn(this -> bias);
 };
+
+void FeedForward::step() {
+    this -> adam.step(this ->d_w);   
+    this -> adam_b.step(this -> d_bias);
+};
+
 #endif

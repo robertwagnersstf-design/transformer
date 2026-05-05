@@ -27,6 +27,7 @@ public:
         Matrix& backward(Matrix& gradient);
 
         void learn();
+        void step();
 
 };
 

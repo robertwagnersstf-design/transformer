@@ -56,7 +56,7 @@ public:
     void zero_init();
     void value_init(float val);
     void positional_encoding_init( );
-
+    void clip_gradients();
     Matrix copy();
     Matrix copy(Matrix& m);
 

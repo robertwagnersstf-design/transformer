@@ -24,6 +24,7 @@ public:
     std::vector<std::string> words;
     std::vector<std::vector<size_t>> sequence;
 
+    std::vector<float> padding_start_index;
     EmbeddingType embeddingtype;
 
     Tokenizer(std::vector<std::string> dictionary_list, size_t d_model, size_t d_seq, EmbeddingType type = EmbeddingType::ByWord);
@@ -32,6 +33,7 @@ public:
 
     void backwards(Matrix & gradient, size_t seq_idx);
     void learn();
+    void step();
 };
 
 

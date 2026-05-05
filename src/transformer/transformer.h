@@ -19,7 +19,7 @@ public:
 
     size_t d_seq, d_model, d_heads, repetitions;
     size_t run_count = 0;
-    
+
     Tokenizer tokenizer;
     std::vector<TransformerBlock> model;
     LMHead lm_head;
@@ -28,14 +28,24 @@ public:
     
     void feed(std::string text);
     void run(size_t input_index);
-    void backprop(std::vector<size_t>&  target, size_t run_index);
+    void backprop(size_t run_index);
     
     void learn();
+    void step();
 
-    size_t predict(Matrix& res);
+    void training_loop(const std::vector<std::string>& data);
+
+    size_t predict(Matrix& res, size_t row_idx = -1);
     size_t predict_k(Matrix& res, size_t k );
+
     std::string word_from_index(size_t index);
-    void calc_loss(std::vector<size_t>&  target);
+
+    float calc_loss(std::vector<size_t>&  target);
+    void test_result(Matrix& r);
+    std::string predict_word(std::string text);
+    
+    void squared_gradient_sum();
+    void apply_scale(float f);
 };
 
 #endif

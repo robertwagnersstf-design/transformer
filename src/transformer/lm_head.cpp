@@ -25,6 +25,9 @@ Matrix& LMHead::forward(Matrix& transformer_output) {
 };
 
 Matrix& LMHead::backward(std::vector<size_t>&  target, Matrix& transformer_output) {
+    this -> d_logits.zero_init();
+    this -> d_embeddings.zero_init();
+
     this -> probs_cache.copy(this -> d_logits);
 
     d_logits.set_row(d_logits.rows - 1, 0.f);
@@ -38,13 +41,18 @@ Matrix& LMHead::backward(std::vector<size_t>&  target, Matrix& transformer_outpu
     this -> d_logits.transpose();
 
     Matrix::gemm(this -> d_logits, this-> embeddings, this -> d_transformer_output );
-    this -> adam.step( this -> d_embeddings);
-
+    
+    
     return this -> d_transformer_output;
 };
 
 void LMHead::learn() {
     this -> adam.learn(this ->embeddings );
 };
+
+void LMHead::step() {
+    this -> adam.step( this -> d_embeddings);
+};
+
 
 #endif
